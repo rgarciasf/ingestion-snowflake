@@ -123,10 +123,11 @@
     <span class="pill">Salaries masked · survey groups ≥ 5</span>
     <span class="pill">All employees fictional</span>
   </div>
+  <div class="note" style="margin-top:18px"><b>Revenue version on hold.</b> We are submitting People Guard (HR) only. The Revenue version (renewals at risk and AI token consumption for a VP of Customer Success) shares the same agent, but the app now offers only HR by default. Its code, data and Snowflake objects are kept in the repo, and <code>ENABLED_EDITIONS=hr,revenue</code> brings it back.</div>
 </header>
 
 <h2>System architecture</h2>
-<p class="sub">Same app and agent design as the Revenue version. The HR version swaps in its own personas, data, prompts and write-back table.</p>
+<p class="sub">People Guard is the version of the app we are submitting. A Revenue version built on the same agent design is on hold (see the note above).</p>
 <div class="card diagram">
 <svg viewBox="0 0 1040 770" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HR version architecture: HR personas, web app with Claude agents, Snowflake account, and the synthetic data pipeline">
   <defs>
@@ -425,7 +426,7 @@
   <div class="card"><div class="bar" style="background:var(--brand)"></div><div class="k" style="color:var(--brand)">Fictional on top</div>
     <p class="muted" style="margin:0">187 people in 14 teams that match the original Acme documents and graph (Jordan Lee CEO, Lena Okafor Principal Engineer, Aisha Khan Product Eng). Salaries follow Acme's Compensation Bands policy, with tier 2 and Lisbon adjustments.</p></div>
   <div class="card"><div class="bar" style="background:var(--warn)"></div><div class="k" style="color:var(--warn)">Story layered in</div>
-    <p class="muted" style="margin:0">The incidents from the Revenue version strain the people who fix them: after-hours work, pages and missed PTO rise, goals slip, recognition dries up, eNPS falls and people leave.</p></div>
+    <p class="muted" style="margin:0">The incidents in Acme's documents (DI-4410, Android 4.2, INC-2291) strain the people who fix them: after-hours work, pages and missed PTO rise, goals slip, recognition dries up, eNPS falls and people leave.</p></div>
 </div>
 
 <h2>Story teams</h2>
@@ -465,7 +466,7 @@
       <li>Node 24 + TypeScript, no build step</li>
       <li><code>@anthropic-ai/sdk</code>, <code>snowflake-sdk</code>, <code>pg</code> (profile only)</li>
       <li>One app, two versions (<code>editions.ts</code>)</li>
-      <li>Single-file UI with Revenue | HR switch</li>
+      <li>Single-file UI; only the HR version is enabled (<code>ENABLED_EDITIONS=hr</code>)</li>
     </ul></div>
 </div>
 
@@ -512,7 +513,7 @@
 </div>
 <div class="note"><b>Same pattern as the AT&amp;T HR talk in Granola:</b> risk-tiered actions (pay steps paused for manual approval), scoped access per call (the persona's Snowflake role), and an audit trail for every agent step.</div>
 
-<footer>Ingestion · People Guard (HR version). Built during the Intelligence at Work hackathon (2026-10-23). All people are fictional; real HR data was used only as aggregate statistics and never published. Revenue version: <a href="architecture.html" style="color:inherit">architecture.html</a>.</footer>
+<footer>Ingestion · People Guard (HR version). Built during the Intelligence at Work hackathon (2026-10-23). All people are fictional; real HR data was used only as aggregate statistics and never published. Revenue version (on hold): <a href="architecture.html" style="color:inherit">architecture.html</a>.</footer>
 </div>
 </body>
 </html>
