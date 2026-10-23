@@ -9,7 +9,7 @@ This app is one agent with two versions, connected to **Snowflake** and powered 
 | | **Revenue** (Revenue Guard) | **HR** (People Guard) |
 |---|---|---|
 | User | VP Customer Success | HR Business Partner, people manager |
-| Cases | **Renewals at risk**: which renewals are at risk, and what did we promise them?<br>**AI token consumption**: who will exceed their AI allowance, who pays for AI they don't use, and where are we losing margin? | **Teams at risk**: which teams are at risk of losing people, and what did we promise them?<br>**Time off**: which pending requests can we approve without breaking on-call coverage, and which comp days do we owe? |
+| Cases | **Renewals at risk**: which renewals are at risk, and what did we promise them?<br>**AI token consumption**: who will exceed their AI allowance, who pays for AI they don't use, and where are we losing margin? | **Teams at risk**: which teams are at risk of losing people, and what did we promise them?<br>**Time off**: which pending requests can we approve without breaking on-call coverage, and which comp days do we owe?<br>**Performance reviews**: where should calibration look closer: rating mix, self vs manager gaps, completion? |
 
 For every case the agent does the same five things:
 
@@ -21,7 +21,7 @@ For every case the agent does the same five things:
 
 > Inspired by **Ingestion**, our earlier company-brain project (ClickHouse-based). All code, SQL and new data in this repo were written during the Intelligence at Work hackathon (2026-10-23). The fictional "Acme" documents in `data/sources/` come from that project, except the new customer call notes, HR notes and the AI and time-off policies. All Snowflake data is newly generated and synthetic.
 
-## The four cases
+## The five cases
 
 ### Revenue · Renewals at risk
 - **Data:** `ACCOUNT_HEALTH` (ARR, days to renewal, usage trend, urgent tickets, CSAT, overdue promises), the `PULSE_ANALYTICS` semantic view, and promises extracted from customer calls (`ACME.BRAIN.COMMITMENTS`).
@@ -47,6 +47,17 @@ For every case the agent does the same five things:
   - the `PEOPLE_ANALYTICS` semantic view;
   - promises extracted from 1:1s and retros (`ACME.BRAIN.PEOPLE_COMMITMENTS`).
 - **Test run:** Data Infra's eNPS went from +15 to −85, after-hours work rose 171%, 2 people left voluntarily, 4 promises are overdue and 1 is broken. Product Eng's eNPS went from +50 to −71. Retention plans are written to `ACME.BRAIN.PEOPLE_ACTIONS`, and pay steps are routed to Total Rewards.
+
+### HR · Performance reviews (calibration prep)
+- **Data:** `PERFORMANCE_SUMMARY` (per team and cycle: completion, manager rating mix, average self and manager rating, self-vs-manager gap) and `PERFORMANCE_COMPETENCIES` (per team and competency). Both cover groups of 5+ only, follow team row access, and come from the synthetic reviews whose shape follows aggregate-only statistics of a real HR system.
+- **Test run (as the HRBP):**
+  - **Baseline:** company average 3.92, 21% rated 5, 94% completion.
+  - **Low completion:** Finance (75%) and Product Eng (83%).
+  - **Possible leniency:** Design (50% rated 5, never a 3) and Platform (3.62 → 4.15).
+  - **Possible severity or drift:** Product Management (4.57 → 3.50, largest self gap) and Support (down three cycles in a row).
+  - **Strong team under strain:** Data Infra, whose promised promotion case is broken.
+  - **Checking:** 9/9 figures verified.
+- **Guardrails:** it never ranks or rates individuals, never uses workload or survey data as performance evidence, and only recommends process actions.
 
 ### HR · Time off
 - **Data:**
@@ -123,7 +134,7 @@ cp .env.example .env          # Snowflake account/user/password (or PAT) and ANT
 npm run knowledge             # regenerates snowflake/03_knowledge.sql from data/sources
 npm run hr:data               # regenerates snowflake/hr/10, 11 and 15 (needs data/hr-profile.json)
 npm run graph                 # regenerates snowflake/07_knowledge_graph.sql from data/graph*.json
-npm run setup                 # runs snowflake/01..08 (Revenue) then snowflake/hr/10..16 (HR) as ACCOUNTADMIN
+npm run setup                 # runs snowflake/01..08 (Revenue) then snowflake/hr/10..17 (HR) as ACCOUNTADMIN
 npm start                     # http://localhost:3000 (set PORT to change)
 ```
 
