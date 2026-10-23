@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>People Guard Presenter Guide</title>
+<title>SignalHR Presenter Guide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -85,7 +85,7 @@
 <div class="wrap">
 
 <div class="eyebrow">Intelligence at Work Hackathon · Presenter guide</div>
-<h1>Ingestion · People Guard</h1>
+<h1>Ingestion · SignalHR</h1>
 <p class="lede">Everything you need to present: what the system is in plain words, the 3-minute script with clicks, how each point from the kickoff talk and the judging criteria is covered, the demo runbook with fallbacks, and answers to likely questions.</p>
 
 <nav class="toc">
@@ -103,7 +103,7 @@
 
 <!-- ======================================================= 1 -->
 <h2 id="s1">1. The system in 30 seconds</h2>
-<div class="say"><b>Say:</b> “People Guard is an HR agent built on Snowflake and Claude. It tells an HR Business Partner which teams are about to burn out or lose people, and which promises we made them that we haven't kept. It also approves time off without breaking on-call coverage, and prepares performance calibration. Every number is checked by a second model, nothing is saved until a human approves, and Snowflake decides who can see what.”</div>
+<div class="say"><b>Say:</b> “SignalHR is an HR agent built on Snowflake and Claude. It tells an HR Business Partner which teams are about to burn out or lose people, and which promises we made them that we haven't kept. It also approves time off without breaking on-call coverage, and prepares performance calibration. Every number is checked by a second model, nothing is saved until a human approves, and Snowflake decides who can see what.”</div>
 <p class="muted">If you remember only one line: <b>“Snowflake governs. Claude reasons and verifies. People decide.”</b></p>
 
 <!-- ======================================================= 2 -->
@@ -249,7 +249,7 @@
 <div class="card">
   <p><span class="time">0:30–1:20</span> <b>Live demo part 1: the manager's time-off review (runs while you talk)</b></p>
   <div class="do"><span class="tag do">Do</span>Click the persona <b>Data Infra Manager</b> → <b>Ask the agent</b> → the example “Review the pending time-off requests…”.</div>
-  <div class="say"><span class="tag say">Say</span>(while the trace runs) “I'm now the Data Infra manager. People Guard is reading Snowflake under my role: the requests, the on-call schedule, team coverage and the comp days we owe. Each step appears in this trace. Claude Opus is doing the investigation, and the cyan steps are a second Claude, Sonnet, re-checking every number before anything is proposed. Under the hood it's all Snowflake: semantic views for the definitions, Cortex Search over the 1:1 notes, and Claude inside Cortex already extracted every promise from those notes.”</div>
+  <div class="say"><span class="tag say">Say</span>(while the trace runs) “I'm now the Data Infra manager. SignalHR is reading Snowflake under my role: the requests, the on-call schedule, team coverage and the comp days we owe. Each step appears in this trace. Claude Opus is doing the investigation, and the cyan steps are a second Claude, Sonnet, re-checking every number before anything is proposed. Under the hood it's all Snowflake: semantic views for the definitions, Cortex Search over the 1:1 notes, and Claude inside Cortex already extracted every promise from those notes.”</div>
 </div>
 
 <div class="card">
@@ -274,7 +274,7 @@
 
 <h3>The problem statement (from the slides)</h3>
 <table class="card tablecard">
-  <tr><th>They asked for</th><th>How People Guard covers it</th><th>Where you show it</th></tr>
+  <tr><th>They asked for</th><th>How SignalHR covers it</th><th>Where you show it</th></tr>
   <tr><td>Use Claude models and Snowflake surfaces</td><td>Claude Opus 5.5 and Sonnet 5.5 via the API; Claude inside Snowflake via Cortex <code>AI_COMPLETE</code>; Snowflake tables, views, semantic views, Cortex Search and policies.</td><td>Trace steps; the architecture sentence in the demo</td></tr>
   <tr><td>Drives a business forward, <b>measurably</b></td><td>Concrete counts: 7 overdue promises found, 9 time-off requests decided, 4 on-call clashes solved, 23 comp days scheduled. Every plan has an owner and a due date.</td><td>Answer and approval card</td></tr>
   <tr><td>For a <b>specific user</b></td><td>The HR Business Partner, plus the people manager for time off.</td><td>Persona cards in the sidebar</td></tr>
@@ -317,7 +317,7 @@
       <li>Demo data is clean. If you already approved things, ask Claude to “reset the demo data” (otherwise the approval cards won't appear).</li>
       <li>Open <b>two tabs</b>; both start on Overview as HR Business Partner.</li>
       <li>Browser zoom 90–100%; close other tabs; turn on Do Not Disturb; laptop on power.</li>
-      <li>Have the video ready: <code>docs/people-guard-demo.mp4</code>.</li>
+      <li>Have the video ready: <code>docs/people-guard-demo.mp4</code>. It was recorded under the earlier name “People Guard”; if asked, say “that was our working title”.</li>
     </ul></div>
   <div class="card"><b>If something goes wrong</b>
     <ul>
@@ -378,7 +378,7 @@
   <li><b>Revenue version on hold.</b> It exists in the repo (renewals and AI token usage), but we focused the submission on HR.</li>
 </ul>
 
-<p class="muted" style="margin-top:40px">Ingestion · People Guard · Intelligence at Work hackathon, 2026-10-23. Architecture: <a href="architecture-hr.html" style="color:inherit">architecture-hr.html</a> · Submission text: <code>docs/submission.md</code></p>
+<p class="muted" style="margin-top:40px">Ingestion · SignalHR · Intelligence at Work hackathon, 2026-10-23. Architecture: <a href="architecture-hr.html" style="color:inherit">architecture-hr.html</a> · Submission text: <code>docs/submission.md</code></p>
 </div>
 </body>
 </html>

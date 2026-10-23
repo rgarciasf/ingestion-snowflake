@@ -92,7 +92,7 @@ Final answer: start with the conclusion in one or two sentences, then a short ta
   hr: {
     id: "hr",
     label: "HR",
-    product: "People Guard",
+    product: "SignalHR",
     headline: "Which teams are at risk of losing people, and what did we promise them?",
     subtitle: "Combines promises from 1:1s and retros with workload, time off and anonymous pulse data in Snowflake. Team-level by default, salaries masked by role, survey groups of 5+ only.",
     examples: [

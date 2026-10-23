@@ -1,4 +1,4 @@
-# Submission: Ingestion · People Guard (HR)
+# Submission: Ingestion · SignalHR
 
 **Repo:** https://github.com/rgarciasf/ingestion-snowflake
 **Team:** Rafael Garcia (Innova Soluciones IT)
@@ -109,8 +109,8 @@ Snowflake (Cortex Search, Cortex `AI_COMPLETE` with Claude, semantic views, row 
 
 | Time | On screen | Voice-over (about 150 words in total) |
 |---|---|---|
-| 0:00–0:06 | People Guard **Overview**: KPI cards, the Data Infra card in red | "Data Infra has been paged every night for three weeks. Their eNPS fell from plus 15 to minus 85, two engineers quit, and the promises we made them are overdue." |
-| 0:06–0:20 | **Ask the agent** as the HR Business Partner → first example. The trace fills in, sped up: team health, Cortex Search over 1:1s, promises, *Sonnet verifier* | "People Guard connects the signals in Snowflake with the promises in our 1:1 notes, and a second Claude re-checks every number." |
+| 0:00–0:06 | SignalHR **Overview**: KPI cards, the Data Infra card in red | "Data Infra has been paged every night for three weeks. Their eNPS fell from plus 15 to minus 85, two engineers quit, and the promises we made them are overdue." |
+| 0:06–0:20 | **Ask the agent** as the HR Business Partner → first example. The trace fills in, sped up: team health, Cortex Search over 1:1s, promises, *Sonnet verifier* | "SignalHR connects the signals in Snowflake with the promises in our 1:1 notes, and a second Claude re-checks every number." |
 | 0:20–0:26 | Click a blue **doc** chip: the retro line where the promise was made. Then an orange **q** chip: the SQL | "Every promise links to the moment it was made. Every number links to its query." |
 | 0:26–0:31 | **Approval card**: the pay step shows "needs Total Rewards" → *Approve & write* | "Nothing is written until HR approves, and pay changes go to Total Rewards." |
 | 0:31–0:44 | Switch persona to the **Data Infra Manager** → time-off example (sped up) → the decisions table with on-call swaps → Approve | "Managers get the same help. It reviews time off against on-call coverage, proposes swaps, and schedules the comp days we owe." |
