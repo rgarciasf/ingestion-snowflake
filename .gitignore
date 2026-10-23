@@ -1,0 +1,7 @@
+node_modules/
+.env
+*.log
+.DS_Store
+
+# Real aggregate statistics from the source HR system: never publish (the generated synthetic SQL is committed instead)
+data/hr-profile.json

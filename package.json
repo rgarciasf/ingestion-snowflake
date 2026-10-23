@@ -1,0 +1,22 @@
+{
+  "name": "ingestion-snowflake",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Ingestion x Snowflake: a revenue-at-risk agent on governed Snowflake data (Intelligence at Work hackathon)",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.ts",
+    "knowledge": "node scripts/build-knowledge-sql.mjs",
+    "hr:data": "node scripts/build-hr-sql.mjs",
+    "graph": "node scripts/build-graph-sql.mjs",
+    "setup": "node --env-file-if-exists=.env scripts/run-sql.ts"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.2.0",
+    "pg": "^8.23.1",
+    "snowflake-sdk": "^3.4.0"
+  }
+}

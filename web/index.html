@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ingestion</title>
+<link rel="icon" href="/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<style>
+  :root {
+    /* Revenue accent (indigo); the HR version swaps these for teal */
+    --accent-50: #f3f1ff; --accent-100: #e9e5ff; --accent-200: #d4ccfe; --accent-500: #6246ea; --accent-600: #4327c5; --accent-700: #3820a5;
+    --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f8fafc;
+    --text: #0f172a; --text-2: #334155; --muted: #64748b; --faint: #94a3b8;
+    --border: #e5e7eb; --border-2: #d1d5db;
+    --side-bg: #0f1424; --side-text: #c7cbe0; --side-muted: #7b8199; --side-hover: #1a2036; --side-border: #222a42;
+    --sql: #c2410c; --sql-bg: #fff7ed; --sql-line: #fed7aa;
+    --doc: #0369a1; --doc-bg: #f0f9ff; --doc-line: #bae6fd;
+    --ok: #047857; --ok-bg: #ecfdf5; --warn: #b45309; --warn-bg: #fffbeb; --warn-line: #fde68a; --bad: #b91c1c; --bad-bg: #fef2f2;
+    --radius: 12px; --radius-sm: 8px;
+    --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 1px 3px rgba(15, 23, 42, .06);
+    --shadow-lg: 0 10px 30px rgba(15, 23, 42, .10);
+  }
+  body[data-edition="hr"] { --accent-50: #ecfdf8; --accent-100: #d1fae5; --accent-200: #a7f3d0; --accent-500: #14b8a6; --accent-600: #0f766e; --accent-700: #115e59; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { font: 14px/1.55 Inter, system-ui, -apple-system, sans-serif; color: var(--text); background: var(--bg); -webkit-font-smoothing: antialiased; }
+  button { font: inherit; }
+  code, pre, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  .hidden { display: none !important; }
+  svg.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ---------- shell ---------- */
+  .app { display: grid; grid-template-columns: 252px 1fr; min-height: 100vh; }
+  .side { background: var(--side-bg); color: var(--side-text); display: flex; flex-direction: column; padding: 18px 14px; gap: 18px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 2px 6px; }
+  .brand img { width: 34px; height: 34px; border-radius: 9px; }
+  .brand b { color: #fff; font-size: 15px; display: block; letter-spacing: -.01em; }
+  .brand span { color: var(--side-muted); font-size: 12px; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; background: #171d31; border: 1px solid var(--side-border); border-radius: 10px; padding: 3px; gap: 3px; }
+  .seg button { all: unset; cursor: pointer; text-align: center; padding: 7px 0; border-radius: 7px; font-weight: 600; font-size: 12.5px; color: var(--side-muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .seg button.on { background: var(--accent-600); color: #fff; }
+  .seg button:not(.on):hover { color: #fff; }
+  .side-label { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--side-muted); padding: 0 8px; margin-bottom: 6px; }
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav button { all: unset; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; color: var(--side-text); font-weight: 500; }
+  .nav button:hover { background: var(--side-hover); color: #fff; }
+  .nav button.on { background: var(--side-hover); color: #fff; box-shadow: inset 3px 0 0 var(--accent-500); }
+  .nav .count { margin-left: auto; font-size: 11px; font-weight: 600; background: #232b45; color: var(--side-text); padding: 1px 7px; border-radius: 999px; }
+  .persona { all: unset; display: block; cursor: pointer; border: 1px solid var(--side-border); border-radius: 10px; padding: 9px 11px; margin-bottom: 6px; }
+  .persona:hover { background: var(--side-hover); }
+  .persona.on { border-color: var(--accent-500); background: #161c30; }
+  .persona .row { display: flex; align-items: center; gap: 8px; }
+  .avatar { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; background: #232b45; color: #fff; flex: none; }
+  .persona.on .avatar { background: var(--accent-600); }
+  .persona b { color: #fff; font-size: 12.5px; display: block; }
+  .persona small { color: var(--side-muted); font-size: 11.5px; display: block; line-height: 1.35; margin-top: 4px; }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--side-border); padding: 12px 8px 0; font-size: 11.5px; color: var(--side-muted); display: flex; gap: 8px; }
+
+  .main { min-width: 0; display: flex; flex-direction: column; }
+  .topbar { height: 60px; display: flex; align-items: center; gap: 14px; padding: 0 28px; background: rgba(255,255,255,.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5; }
+  .crumbs { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .crumbs b { color: var(--text); font-weight: 600; }
+  .topbar .right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; }
+  .pill.accent { background: var(--accent-50); border-color: var(--accent-200); color: var(--accent-700); font-weight: 600; }
+  .content { padding: 28px; max-width: 1240px; width: 100%; }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+  .page-head h1 { font-size: 22px; letter-spacing: -.02em; margin: 0 0 4px; }
+  .page-head p { margin: 0; color: var(--muted); max-width: 760px; }
+
+  /* ---------- building blocks ---------- */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .card-pad { padding: 18px 20px; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .card-head h3 { margin: 0; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .card-head .sub { color: var(--muted); font-size: 12.5px; }
+  .btn { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; background: var(--accent-600); color: #fff; }
+  .btn:hover { background: var(--accent-700); }
+  .btn[disabled] { opacity: .5; pointer-events: none; }
+  .btn.ghost { background: var(--surface); color: var(--text-2); border: 1px solid var(--border-2); font-weight: 500; }
+  .btn.ghost:hover { background: var(--surface-2); }
+  .btn.sm { padding: 6px 10px; font-size: 12.5px; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; text-transform: capitalize; }
+  .badge.high { background: var(--bad-bg); color: var(--bad); } .badge.medium { background: var(--warn-bg); color: var(--warn); } .badge.low, .badge.ok { background: var(--ok-bg); color: var(--ok); }
+  .badge.neutral { background: #f1f5f9; color: var(--text-2); }
+  .neg { color: var(--bad); font-weight: 600; } .pos { color: var(--ok); font-weight: 600; }
+  .empty { color: var(--muted); padding: 36px; text-align: center; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+  .spinner { width: 12px; height: 12px; border: 2px solid var(--accent-200); border-top-color: var(--accent-600); border-radius: 50%; animation: spin .8s linear infinite; flex: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- overview ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .kpi { padding: 16px 18px; }
+  .kpi .top { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 12.5px; font-weight: 500; }
+  .kpi .ico { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-50); color: var(--accent-600); }
+  .kpi .ico.bad { background: var(--bad-bg); color: var(--bad); } .kpi .ico.warn { background: var(--warn-bg); color: var(--warn); }
+  .kpi .val { font-size: 26px; font-weight: 700; letter-spacing: -.02em; margin-top: 8px; }
+  .kpi .hint { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .ov-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .risk-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px; }
+  .risk { border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: var(--surface); cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+  .risk:hover { border-color: var(--accent-200); box-shadow: var(--shadow-lg); }
+  .risk .name { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 600; }
+  .risk .meta { color: var(--muted); font-size: 12px; margin: 2px 0 10px; }
+  .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .metric { background: var(--surface-2); border-radius: 8px; padding: 7px 9px; }
+  .metric .k { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .metric .v { font-weight: 600; font-size: 13.5px; }
+  .quick { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .quick button { all: unset; cursor: pointer; display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; color: var(--text-2); font-size: 13px; }
+  .quick button:hover { border-color: var(--accent-200); background: var(--accent-50); color: var(--accent-700); }
+  .activity { padding: 6px 16px 14px; }
+  .activity .item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .activity .item .badge { margin-top: 2px; }
+  .activity .item:last-child { border-bottom: 0; }
+
+  /* ---------- ask ---------- */
+  .composer { padding: 14px; }
+  .composer-row { display: flex; gap: 10px; align-items: flex-end; }
+  .composer textarea { flex: 1; resize: vertical; min-height: 52px; font: inherit; font-size: 14.5px; padding: 12px 14px; border: 1px solid var(--border-2); border-radius: 10px; background: var(--surface); color: var(--text); }
+  .composer textarea:focus { outline: 3px solid var(--accent-100); border-color: var(--accent-600); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .chip { all: unset; cursor: pointer; font-size: 12.5px; padding: 6px 11px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-2); display: inline-flex; gap: 6px; align-items: center; }
+  .chip:hover { border-color: var(--accent-200); color: var(--accent-700); background: var(--accent-50); }
+  .run { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; margin-top: 16px; align-items: start; }
+  .answer { padding: 20px 22px; font-size: 14.5px; line-height: 1.65; }
+  .answer h2, .answer h3 { font-size: 15.5px; margin: 18px 0 8px; letter-spacing: -.01em; }
+  .answer table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 13px; display: block; overflow-x: auto; }
+  .answer th, .answer td { border-bottom: 1px solid var(--border); padding: 7px 9px; text-align: left; vertical-align: top; }
+  .answer th { background: var(--surface-2); font-weight: 600; }
+  .status { color: var(--muted); font-size: 13px; display: flex; gap: 10px; align-items: center; }
+  .meta-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .cite { all: unset; cursor: pointer; font: 600 11px Inter; padding: 0 6px; border-radius: 5px; margin: 0 1px; vertical-align: 1px; }
+  .cite.sql { background: var(--sql-bg); color: var(--sql); border: 1px solid var(--sql-line); }
+  .cite.doc { background: var(--doc-bg); color: var(--doc); border: 1px solid var(--doc-line); }
+  .trace { position: sticky; top: 76px; max-height: calc(100vh - 96px); overflow-y: auto; }
+  .steps { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 0; }
+  .step { position: relative; padding: 0 0 12px 22px; font-size: 12.5px; }
+  .step::before { content: ""; position: absolute; left: 6px; top: 16px; bottom: 0; width: 1px; background: var(--border); }
+  .step:last-child::before { display: none; }
+  .step .dot { position: absolute; left: 0; top: 4px; width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--accent-500); background: var(--surface); }
+  .step.done .dot { background: var(--accent-500); }
+  .step.err .dot { border-color: var(--bad); background: var(--bad); }
+  .step.verifier .dot { border-color: #0e7490; } .step.verifier.done .dot { background: #0e7490; }
+  .step .top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .step .who { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: var(--accent-50); color: var(--accent-700); }
+  .step.verifier .who { background: #ecfeff; color: #0e7490; }
+  .step .tool { font-weight: 600; font-family: "JetBrains Mono", monospace; font-size: 11.5px; }
+  .step .sum { color: var(--muted); margin-left: auto; font-size: 11.5px; display: flex; align-items: center; gap: 6px; }
+  .step.err .sum { color: var(--bad); }
+  .step pre { margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; font-size: 11px; line-height: 1.45; color: var(--text-2); background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; max-height: 110px; overflow: auto; }
+  .step .purpose { color: var(--text-2); margin-top: 3px; }
+  .approval { border: 1px solid var(--warn-line); background: linear-gradient(180deg, #fffdf5, var(--surface)); border-radius: var(--radius); margin-bottom: 16px; box-shadow: var(--shadow); overflow: hidden; }
+  .approval .head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--warn-line); background: var(--warn-bg); }
+  .approval .head h3 { margin: 0; font-size: 14px; }
+  .approval .items { padding: 12px 18px; display: grid; gap: 10px; }
+  .approval .item { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; background: var(--surface); }
+  .approval .item ul { margin: 8px 0 0; padding-left: 18px; color: var(--text-2); font-size: 13px; }
+  .approval .item li { margin: 3px 0; }
+  .approval .actions { display: flex; gap: 8px; padding: 12px 18px 16px; }
+
+  /* ---------- data + actions ---------- */
+  .toolbar { display: flex; align-items: center; gap: 8px; }
+  .toggle { display: inline-flex; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+  .toggle button { all: unset; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 6px; color: var(--muted); font-size: 12.5px; font-weight: 500; }
+  .toggle button.on { background: var(--accent-50); color: var(--accent-700); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+  .tablewrap { overflow: auto; max-height: 70vh; }
+  .grid { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .grid th, .grid td { border-bottom: 1px solid var(--border); padding: 10px 12px; text-align: left; white-space: nowrap; }
+  .grid th { position: sticky; top: 0; background: var(--surface-2); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 600; }
+  .grid tr:hover td { background: var(--surface-2); }
+  .plan { padding: 16px 18px; }
+  .plan .row1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .plan .row1 b { font-size: 15px; }
+  .plan .summary { color: var(--text-2); margin: 8px 0 10px; }
+  .plan ul { margin: 0; padding-left: 18px; font-size: 13px; color: var(--text-2); }
+  .plan .foot { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; color: var(--muted); font-size: 12px; }
+
+  /* ---------- drawer ---------- */
+  .scrim { position: fixed; inset: 0; background: rgba(15, 23, 42, .25); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 9; }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+  .drawer { position: fixed; top: 0; right: 0; width: min(600px, 100vw); height: 100vh; background: var(--surface); border-left: 1px solid var(--border); box-shadow: var(--shadow-lg); transform: translateX(100%); visibility: hidden; transition: transform .22s, visibility .22s; z-index: 10; display: flex; flex-direction: column; }
+  .drawer.open { transform: none; visibility: visible; }
+  .drawer .dh { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .drawer .db { padding: 18px 20px; overflow: auto; }
+  .drawer pre { white-space: pre-wrap; font-size: 12px; line-height: 1.5; background: var(--surface-2); border: 1px solid var(--border); padding: 12px; border-radius: 8px; }
+
+  @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ov-grid, .run { grid-template-columns: 1fr; } .trace { position: static; max-height: none; } }
+  @media (max-width: 800px) {
+    .app { grid-template-columns: 1fr; }
+    .side { position: static; height: auto; }
+    .content { padding: 16px; } .topbar { padding: 0 16px; }
+    .risk-list { grid-template-columns: 1fr; } .kpis { grid-template-columns: 1fr 1fr; }
+    .page-head { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<!-- Icon set (Lucide-style strokes) -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1M10 21v-3h4v3"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.7-3.5 3.4-5.5 6.5-5.5s5.8 2 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.7.8 2.8 2.6 3 5.2"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M9 3h6v3H9zM8.5 13.5l2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-dollar" viewBox="0 0 24 24"><path d="M12 2v20M17 6.5c-1-1.5-2.8-2.5-5-2.5-2.8 0-5 1.6-5 4s2.2 3.3 5 4 5 1.6 5 4-2.2 4-5 4c-2.2 0-4-1-5-2.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4.3L2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.2M3 12A9 9 0 0 1 18.5 5.8"/><path d="M21 4v5h-5M3 20v-5h5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><img src="/logo.svg" alt=""><div><b>Ingestion</b><span id="productName">Revenue Guard</span></div></div>
+
+    <div>
+      <div class="side-label">Workspace</div>
+      <div class="seg" id="editionSwitch"></div>
+    </div>
+
+    <div>
+      <div class="side-label">Menu</div>
+      <nav class="nav" id="nav">
+        <button data-tab="overview" class="on"><svg class="i"><use href="#i-dashboard"/></svg>Overview</button>
+        <button data-tab="ask"><svg class="i"><use href="#i-spark"/></svg>Ask the agent</button>
+        <button data-tab="data"><svg class="i" id="dataIcon"><use href="#i-building"/></svg><span id="tabTableLabel">Accounts</span></button>
+        <button data-tab="actions"><svg class="i" id="actionsIcon"><use href="#i-bell"/></svg><span id="tabActionsLabel">Risk alerts</span><span class="count hidden" id="actionsCount"></span></button>
+      </nav>
+    </div>
+
+    <div>
+      <div class="side-label">Acting as (Snowflake role)</div>
+      <div id="personas"></div>
+    </div>
+
+    <div class="side-foot"><svg class="i" style="width:16px;height:16px"><use href="#i-shield"/></svg><span>Governed by Snowflake row access, masking and aggregation policies. Opus 5.5 investigates, Sonnet 5.5 verifies.</span></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumbs"><span id="crumbProduct">Revenue Guard</span><svg class="i" style="width:14px;height:14px"><use href="#i-chev"/></svg><b id="crumbPage">Overview</b></div>
+      <div class="right">
+        <span class="pill accent" id="editionBadge">REVENUE</span>
+        <span class="pill"><span class="dot"></span><span class="mono" id="rolePill">ACME_CS_LEAD</span></span>
+        <span class="pill"><svg class="i" style="width:14px;height:14px"><use href="#i-db"/></svg>Snowflake · ACME</span>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- ================= Overview ================= -->
+      <section id="tab-overview">
+        <div class="page-head">
+          <div><h1 id="ovTitle">Overview</h1><p id="ovSub"></p></div>
+          <button class="btn ghost sm" id="ovRefresh"><svg class="i" style="width:15px;height:15px"><use href="#i-refresh"/></svg>Refresh</button>
+        </div>
+        <div class="kpis" id="kpis"></div>
+        <div class="ov-grid">
+          <div class="card">
+            <div class="card-head"><h3><svg class="i"><use href="#i-alert"/></svg><span id="riskTitle">Needs attention</span></h3><span class="sub" id="riskSub"></span></div>
+            <div class="risk-list" id="riskList"></div>
+          </div>
+          <div style="display:grid;gap:16px">
+            <div class="card">
+              <div class="card-head"><h3><svg class="i"><use href="#i-spark"/></svg>Ask the agent</h3></div>
+              <div class="quick" id="quickAsk"></div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h3><svg class="i"><use href="#i-check"/></svg><span id="recentTitle">Recent actions</span></h3></div>
+              <div class="activity" id="recent"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Ask ================= -->
+      <section id="tab-ask" class="hidden">
+        <div class="page-head"><div><h1 id="headline"></h1><p id="subtitle"></p></div></div>
+        <div class="card composer">
+          <div class="composer-row">
+            <textarea id="q" rows="2" placeholder="Ask about accounts, renewals, commitments, usage…"></textarea>
+            <button class="btn" id="go"><svg class="i" style="width:16px;height:16px"><use href="#i-send"/></svg>Ask</button>
+          </div>
+          <div class="chips" id="examples"></div>
+        </div>
+        <div class="run hidden" id="run">
+          <div>
+            <div id="approvals"></div>
+            <div class="card answer" id="answer"><div class="status"><div class="spinner"></div><span id="statusText">Starting…</span></div></div>
+            <div class="meta-bar" id="meta"></div>
+          </div>
+          <div class="card trace">
+            <div class="card-head"><h3><svg class="i"><use href="#i-clock"/></svg>Agent trace</h3><span class="sub" id="stepCount"></span></div>
+            <div class="steps" id="steps"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Data ================= -->
+      <section id="tab-data" class="hidden">
+        <div class="page-head">
+          <div><h1 id="tableTitle"></h1><p id="tableSub"></p></div>
+          <div class="toolbar">
+            <div class="toggle" id="viewToggle">
+              <button data-view="cards" class="on"><svg class="i" style="width:15px;height:15px"><use href="#i-grid"/></svg>Cards</button>
+              <button data-view="table"><svg class="i" style="width:15px;height:15px"><use href="#i-table"/></svg>Table</button>
+            </div>
+          </div>
+        </div>
+        <div id="dataView"></div>
+      </section>
+
+      <!-- ================= Actions ================= -->
+      <section id="tab-actions" class="hidden">
+        <div class="page-head"><div><h1 id="actionsTitle"></h1><p id="actionsSub"></p></div>
+          <button class="btn ghost sm" id="actionsRefresh"><svg class="i" style="width:15px;height:15px"><use href="#i-refresh"/></svg>Refresh</button></div>
+        <div id="actionsView"></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="dh"><b id="dTitle"></b><button class="btn ghost sm" id="dClose"><svg class="i" style="width:15px;height:15px"><use href="#i-x"/></svg>Close</button></div>
+  <div class="db" id="dBody"></div>
+</aside>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const icon = (name, size = 16) => `<svg class="i" style="width:${size}px;height:${size}px"><use href="#i-${name}"/></svg>`;
+function localStorageGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
+function localStorageSet(k, v) { try { localStorage.setItem(k, v); } catch {} }
+
+let editions = {};
+let edition = localStorageGet("edition") || "revenue";
+let role = localStorageGet("role:" + edition);
+let currentTab = localStorageGet("tab") || "overview";
+let dataView = localStorageGet("dataView") || "cards";
+let refs = {};
+const cache = {}; // `${edition}|${role}|table|actions` -> rows
+
+// ------------------------------------------------------------------ data access
+async function getRows(kind, force) {
+  const key = `${edition}|${role}|${kind}`;
+  if (!force && cache[key]) return cache[key];
+  const r = await fetch(`/api/${kind}?edition=${edition}&role=${role}`);
+  const body = await r.json();
+  if (!r.ok) throw new Error(body.error || "Request failed");
+  return (cache[key] = body);
+}
+const parseJson = (v) => { if (v == null) return null; if (typeof v !== "string") return v; try { return JSON.parse(v); } catch { return v; } };
+const money = (v) => "$" + Math.round(Number(v || 0)).toLocaleString();
+const kmoney = (v) => { const n = Number(v || 0); return n >= 1e6 ? `$${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(1)}K` : `$${n}`; };
+const pct = (v) => (v == null ? "–" : `${Number(v) > 0 ? "+" : ""}${Number(v)}%`);
+const initials = (s) => s.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+const day = (v) => String(v ?? "").replace(/[T ].*$/, "");
+
+// Simple, explainable risk level for the overview cards (the agent does the real analysis).
+function riskOf(r) {
+  if (edition === "hr") {
+    const overdue = Number(r.OVERDUE_PROMISES || 0), ah = Number(r.AFTER_HOURS_CHANGE_PCT || 0), enps = r.ENPS_OCT == null ? null : Number(r.ENPS_OCT);
+    if (overdue > 0 && (ah > 60 || (enps != null && enps < -40))) return "high";
+    if (overdue > 0 || ah > 60 || (enps != null && enps < -20)) return "medium";
+    return "low";
+  }
+  const overdue = Number(r.OVERDUE_COMMITMENTS || 0), usage = Number(r.USAGE_CHANGE_PCT || 0), urgent = Number(r.URGENT_TICKETS_30D || 0);
+  if (overdue > 0 && (usage < -10 || urgent >= 10) && Number(r.DAYS_TO_RENEWAL) <= 60) return "high";
+  if (overdue > 0 && Number(r.DAYS_TO_RENEWAL) <= 30) return "high";
+  if (overdue > 0 || usage < -15 || urgent >= 10) return "medium";
+  return "low";
+}
+const riskRank = { high: 0, medium: 1, low: 2 };
+
+// ------------------------------------------------------------------ shell
+async function init() {
+  editions = await (await fetch("/api/editions")).json();
+  if (!editions[edition]) edition = "revenue";
+  render();
+  showTab(currentTab);
+}
+
+function render() {
+  const e = editions[edition];
+  if (!e.personas[role]) role = Object.keys(e.personas)[0];
+  const hr = edition === "hr";
+  document.body.dataset.edition = edition;
+  document.title = `Ingestion · ${e.product}`;
+  $("productName").textContent = `${e.product} · on Snowflake`;
+  $("crumbProduct").textContent = e.product;
+  $("editionBadge").textContent = e.label.toUpperCase();
+  $("rolePill").textContent = role;
+  $("editionSwitch").innerHTML = Object.values(editions).map((x) =>
+    `<button data-e="${x.id}" class="${x.id === edition ? "on" : ""}">${icon(x.id === "hr" ? "users" : "dollar", 14)}${esc(x.label)}</button>`).join("");
+  document.querySelectorAll("#editionSwitch button").forEach((b) => b.onclick = () => {
+    if (b.dataset.e === edition) return;
+    edition = b.dataset.e; localStorageSet("edition", edition); role = localStorageGet("role:" + edition);
+    $("run").classList.add("hidden"); render(); showTab(currentTab);
+  });
+  $("dataIcon").innerHTML = `<use href="#i-${hr ? "users" : "building"}"/>`;
+  $("actionsIcon").innerHTML = `<use href="#i-${hr ? "check" : "bell"}"/>`;
+  $("tabTableLabel").textContent = e.tableTab.label;
+  $("tabActionsLabel").textContent = e.actionsTab.label;
+  $("headline").textContent = e.headline;
+  $("subtitle").textContent = e.subtitle;
+  $("q").placeholder = hr ? "Ask about teams, workload, promises to employees…" : "Ask about accounts, renewals, commitments, usage…";
+  $("tableTitle").textContent = e.tableTab.title; $("tableSub").textContent = e.tableTab.subtitle;
+  $("actionsTitle").textContent = e.actionsTab.title; $("actionsSub").textContent = e.actionsTab.subtitle;
+  $("ovTitle").textContent = hr ? "People overview" : "Revenue overview";
+  $("ovSub").textContent = e.headline;
+  $("riskTitle").textContent = hr ? "Teams that need attention" : "Renewals that need attention";
+  $("recentTitle").textContent = hr ? "Recent retention plans" : "Recent risk alerts";
+  $("examples").innerHTML = e.examples.map((x) => `<button class="chip">${icon("spark", 13)}${esc(x)}</button>`).join("");
+  document.querySelectorAll("#examples .chip").forEach((c) => c.onclick = () => { $("q").value = c.textContent; ask(); });
+  $("quickAsk").innerHTML = e.examples.slice(0, 3).map((x) => `<button>${icon("spark", 15)}<span>${esc(x)}</span></button>`).join("");
+  document.querySelectorAll("#quickAsk button").forEach((b) => b.onclick = () => { $("q").value = b.textContent; showTab("ask"); ask(); });
+  $("personas").innerHTML = Object.entries(e.personas).map(([k, p]) =>
+    `<button class="persona ${k === role ? "on" : ""}" data-role="${k}"><div class="row"><span class="avatar">${initials(p.label)}</span><b>${esc(p.label)}</b></div><small>${esc(p.description)}</small></button>`).join("");
+  document.querySelectorAll(".persona").forEach((b) => b.onclick = () => {
+    if (b.dataset.role === role) return;
+    role = b.dataset.role; localStorageSet("role:" + edition, role); render(); showTab(currentTab);
+  });
+}
+
+const PAGE_NAMES = { overview: "Overview", ask: "Ask the agent" };
+function showTab(tab) {
+  currentTab = tab; localStorageSet("tab", tab);
+  document.querySelectorAll("#nav button").forEach((x) => x.classList.toggle("on", x.dataset.tab === tab));
+  ["overview", "ask", "data", "actions"].forEach((t) => $("tab-" + t).classList.toggle("hidden", t !== tab));
+  const e = editions[edition];
+  $("crumbPage").textContent = PAGE_NAMES[tab] ?? (tab === "data" ? e.tableTab.label : e.actionsTab.label);
+  if (tab === "overview") loadOverview();
+  if (tab === "data") loadData();
+  if (tab === "actions") loadActions();
+  updateActionsCount();
+}
+document.querySelectorAll("#nav button").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
+$("ovRefresh").onclick = () => loadOverview(true);
+$("actionsRefresh").onclick = () => loadActions(true);
+document.querySelectorAll("#viewToggle button").forEach((b) => b.onclick = () => {
+  dataView = b.dataset.view; localStorageSet("dataView", dataView); loadData();
+});
+
+async function updateActionsCount() {
+  try {
+    const rows = await getRows("actions");
+    $("actionsCount").textContent = rows.length; $("actionsCount").classList.toggle("hidden", !rows.length);
+  } catch { $("actionsCount").classList.add("hidden"); }
+}
+
+// ------------------------------------------------------------------ overview
+function kpi(label, value, hint, ico, tone = "") {
+  return `<div class="card kpi"><div class="top"><span>${esc(label)}</span><span class="ico ${tone}">${icon(ico, 17)}</span></div><div class="val">${value}</div><div class="hint">${hint}</div></div>`;
+}
+async function loadOverview(force) {
+  $("kpis").innerHTML = [1, 2, 3, 4].map(() => `<div class="card kpi"><div class="top"><span>Loading…</span></div><div class="val">–</div></div>`).join("");
+  $("riskList").innerHTML = `<div class="empty" style="grid-column:1/-1">Loading…</div>`;
+  $("recent").innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const [rows, actions] = await Promise.all([getRows("table", force), getRows("actions", force)]);
+    const scored = rows.map((r) => ({ r, risk: riskOf(r) })).sort((a, b) => riskRank[a.risk] - riskRank[b.risk]);
+    const high = scored.filter((x) => x.risk === "high");
+    if (edition === "hr") {
+      const exits = rows.reduce((s, r) => s + Number(r.VOLUNTARY_EXITS_90D || 0), 0);
+      const overdue = rows.reduce((s, r) => s + Number(r.OVERDUE_PROMISES || 0), 0);
+      const people = rows.reduce((s, r) => s + Number(r.HEADCOUNT || 0), 0);
+      $("kpis").innerHTML = [
+        kpi("Teams in scope", rows.length, `${people} people visible to this role`, "users"),
+        kpi("Teams at high risk", high.length, high.map((x) => x.r.TEAM).join(", ") || "None right now", "alert", high.length ? "bad" : ""),
+        kpi("Overdue promises", overdue, "made to employees and teams", "clock", overdue ? "warn" : ""),
+        kpi("Voluntary exits (90 days)", exits, `${actions.length} retention plan(s) on file`, "trend", exits ? "warn" : ""),
+      ].join("");
+      $("riskSub").textContent = "Team level · survey groups of 5+";
+      $("riskList").innerHTML = scored.slice(0, 6).map(({ r, risk }) => `
+        <div class="risk" data-q="What's going on in ${esc(r.TEAM)}, and which promises to them are overdue?">
+          <div class="name"><span>${esc(r.TEAM)}</span><span class="badge ${risk}">${risk}</span></div>
+          <div class="meta">${esc(r.MANAGER || "")} · ${r.HEADCOUNT} people</div>
+          <div class="metrics">
+            <div class="metric"><div class="k">After-hours</div><div class="v ${Number(r.AFTER_HOURS_CHANGE_PCT) > 60 ? "neg" : ""}">${pct(r.AFTER_HOURS_CHANGE_PCT)}</div></div>
+            <div class="metric"><div class="k">eNPS Oct</div><div class="v ${r.ENPS_OCT != null && Number(r.ENPS_OCT) < -20 ? "neg" : ""}">${r.ENPS_OCT ?? "n<5"}</div></div>
+            <div class="metric"><div class="k">Overdue</div><div class="v ${Number(r.OVERDUE_PROMISES) ? "neg" : ""}">${r.OVERDUE_PROMISES}</div></div>
+          </div></div>`).join("") || `<div class="empty" style="grid-column:1/-1">No teams visible to this role.</div>`;
+    } else {
+      const arr = rows.reduce((s, r) => s + Number(r.ARR_USD || 0), 0);
+      const atRiskArr = high.reduce((s, x) => s + Number(x.r.ARR_USD || 0), 0);
+      const overdue = rows.reduce((s, r) => s + Number(r.OVERDUE_COMMITMENTS || 0), 0);
+      $("kpis").innerHTML = [
+        kpi("Renewals in 120 days", rows.length, `${kmoney(arr)} ARR visible to this role`, "building"),
+        kpi("ARR at high risk", kmoney(atRiskArr), `${high.length} account(s)`, "dollar", high.length ? "bad" : ""),
+        kpi("Overdue customer promises", overdue, "across these renewals", "clock", overdue ? "warn" : ""),
+        kpi("Risk alerts on file", actions.length, "approved and written to Snowflake", "bell"),
+      ].join("");
+      $("riskSub").textContent = "Enterprise renewals · next 120 days";
+      $("riskList").innerHTML = scored.slice(0, 6).map(({ r, risk }) => `
+        <div class="risk" data-q="Why is ${esc(r.ACCOUNT)} at risk, and what do they expect from us before renewal?">
+          <div class="name"><span>${esc(r.ACCOUNT)}</span><span class="badge ${risk}">${risk}</span></div>
+          <div class="meta">${money(r.ARR_USD)} ARR · renews ${day(r.RENEWAL_DATE)} (${r.DAYS_TO_RENEWAL} days) · ${esc(r.CSM || "")}</div>
+          <div class="metrics">
+            <div class="metric"><div class="k">Usage</div><div class="v ${Number(r.USAGE_CHANGE_PCT) < -15 ? "neg" : Number(r.USAGE_CHANGE_PCT) > 5 ? "pos" : ""}">${pct(r.USAGE_CHANGE_PCT)}</div></div>
+            <div class="metric"><div class="k">Urgent tix</div><div class="v ${Number(r.URGENT_TICKETS_30D) >= 10 ? "neg" : ""}">${r.URGENT_TICKETS_30D}</div></div>
+            <div class="metric"><div class="k">Overdue</div><div class="v ${Number(r.OVERDUE_COMMITMENTS) ? "neg" : ""}">${r.OVERDUE_COMMITMENTS}</div></div>
+          </div></div>`).join("") || `<div class="empty" style="grid-column:1/-1">No renewals visible to this role.</div>`;
+    }
+    document.querySelectorAll("#riskList .risk").forEach((c) => c.onclick = () => { $("q").value = c.dataset.q; showTab("ask"); ask(); });
+    $("recent").innerHTML = actions.slice(0, 5).map((a) => `
+      <div class="item"><span class="badge ${esc(a.RISK_LEVEL)}">${esc(a.RISK_LEVEL)}</span>
+        <div><b>${esc(a.TEAM || a.ACCOUNT)}</b><div style="color:var(--muted);font-size:12px">${day(a.CREATED_AT)} · ${esc(a.STATUS)} · by ${esc(a.APPROVED_BY || a.CREATED_BY_ROLE)}</div></div></div>`).join("")
+      || `<div class="empty" style="padding:18px">Nothing approved yet. Ask the agent to propose ${edition === "hr" ? "retention plans" : "risk alerts"}.</div>`;
+  } catch (err) {
+    $("kpis").innerHTML = ""; $("riskList").innerHTML = `<div class="empty" style="grid-column:1/-1">${esc(err.message)}</div>`; $("recent").innerHTML = "";
+  }
+}
+
+// ------------------------------------------------------------------ data view
+function fmt(k, v) {
+  if (v === null || v === undefined) return `<span style="color:var(--faint)">–</span>`;
+  if (/ARR|MRR|SALARY/.test(k)) return money(v);
+  if (/USAGE_CHANGE_PCT/.test(k)) { const n = Number(v); return `<span class="${n < -15 ? "neg" : n > 10 ? "pos" : ""}">${pct(n)}</span>`; }
+  if (/AFTER_HOURS_CHANGE_PCT/.test(k)) { const n = Number(v); return `<span class="${n > 40 ? "neg" : ""}">${pct(n)}</span>`; }
+  if (k === "RISK_LEVEL") return `<span class="badge ${esc(v)}">${esc(v)}</span>`;
+  if (typeof v === "object") return esc(JSON.stringify(v));
+  return esc(day(v));
+}
+const nice = (k) => k.toLowerCase().replace(/_/g, " ").replace(/\b(arr|usd|csat|enps|pct|30d|90d|3w|6w|oct|q3)\b/g, (m) => m.toUpperCase()).replace(/^./, (c) => c.toUpperCase());
+function table(rows) {
+  if (!rows.length) return `<div class="empty">No rows visible to this role.</div>`;
+  const cols = Object.keys(rows[0]);
+  return `<table class="grid"><thead><tr>${cols.map((c) => `<th>${esc(nice(c))}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${cols.map((c) => `<td>${fmt(c, r[c])}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+async function loadData() {
+  document.querySelectorAll("#viewToggle button").forEach((b) => b.classList.toggle("on", b.dataset.view === dataView));
+  $("dataView").innerHTML = `<div class="card empty">Loading…</div>`;
+  try {
+    const rows = await getRows("table");
+    if (dataView === "table") { $("dataView").innerHTML = `<div class="card tablewrap">${table(rows)}</div>`; return; }
+    const key = edition === "hr" ? "TEAM" : "ACCOUNT";
+    const skip = new Set([key]);
+    $("dataView").innerHTML = rows.length ? `<div class="cards">${rows.map((r) => {
+      const risk = riskOf(r);
+      const fields = Object.keys(r).filter((k) => !skip.has(k));
+      return `<div class="card plan">
+        <div class="row1"><b>${esc(r[key])}</b><span class="badge ${risk}" style="margin-left:auto">${risk}</span></div>
+        <div class="metrics" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:12px">${fields.map((k) => `<div class="metric"><div class="k">${esc(nice(k))}</div><div class="v">${fmt(k, r[k])}</div></div>`).join("")}</div>
+      </div>`;
+    }).join("")}</div>` : `<div class="card empty">No rows visible to this role.</div>`;
+  } catch (err) { $("dataView").innerHTML = `<div class="card empty">${esc(err.message)}</div>`; }
+}
+
+// ------------------------------------------------------------------ actions view
+async function loadActions(force) {
+  $("actionsView").innerHTML = `<div class="card empty">Loading…</div>`;
+  try {
+    const rows = await getRows("actions", force);
+    updateActionsCount();
+    $("actionsView").innerHTML = rows.length ? `<div class="cards">${rows.map((a) => {
+      const acts = parseJson(a.ACTIONS) || [];
+      return `<div class="card plan">
+        <div class="row1"><span class="badge ${esc(a.RISK_LEVEL)}">${esc(a.RISK_LEVEL)}</span><b>${esc(a.TEAM || a.ACCOUNT)}</b>
+          ${a.ARR_USD != null ? `<span style="color:var(--muted);font-size:12.5px">${money(a.ARR_USD)} ARR · renews ${day(a.RENEWAL_DATE)}</span>` : ""}
+          <span class="badge neutral" style="margin-left:auto">${esc(a.STATUS)}</span></div>
+        <div class="summary">${esc(a.SUMMARY)}</div>
+        <ul>${(Array.isArray(acts) ? acts : []).map((x) => `<li><b>${esc(x.owner)}</b>: ${esc(x.action)} <span style="color:var(--muted)">(by ${esc(x.due_date)})</span>${x.category === "pay" ? ` <span class="badge medium">Total Rewards</span>` : ""}</li>`).join("")}</ul>
+        <div class="foot"><span>${icon("clock", 13)} ${day(a.CREATED_AT)}</span><span>${icon("shield", 13)} approved by ${esc(a.APPROVED_BY || "–")}</span>${a.REQUIRES_APPROVAL_FROM ? `<span>needs ${esc(a.REQUIRES_APPROVAL_FROM)}</span>` : ""}</div>
+      </div>`;
+    }).join("")}</div>` : `<div class="card empty">Nothing written yet. Ask the agent to propose ${edition === "hr" ? "retention plans" : "risk alerts"} and approve them.</div>`;
+  } catch (err) { $("actionsView").innerHTML = `<div class="card empty">${esc(err.message)}</div>`; }
+}
+
+// ------------------------------------------------------------------ ask
+function stepInput(tool, input) {
+  if (tool === "run_sql") return `<div class="purpose">${esc(input.purpose || "")}</div><pre>${esc(input.sql)}</pre>`;
+  if (tool === "search_knowledge") return `<pre>${esc(input.query)}${input.account ? " · account=" + esc(input.account) : ""}${input.team ? " · team=" + esc(input.team) : ""}${input.source_type ? " · " + esc(input.source_type) : ""}</pre>`;
+  if (tool === "verify_numbers") return `<pre>${esc((input.claims || []).map((c) => "• " + c.claim + " → " + c.value).join("\n"))}</pre>`;
+  if (tool === "explore_graph") return `<pre>${esc(input.entity)} · ${input.hops ?? 2} hops</pre>`;
+  if (tool === "get_commitments") return `<pre>${esc(JSON.stringify(input))}</pre>`;
+  if (tool === "propose_actions") return `<pre>${esc((input.items || []).map((a) => a.account || a.team).join(", "))}</pre>`;
+  return "";
+}
+function linkCitations(html) {
+  return html.replace(/\[((?:q\d+)|(?:[a-z0-9]+(?:-[a-z0-9]+)+--\d+))\]/g, (m, id) =>
+    refs[id] ? `<button class="cite ${refs[id].kind === "sql" ? "sql" : "doc"}" data-ref="${esc(id)}">${esc(id.startsWith("q") ? id : "doc")}</button>` : m);
+}
+function openDrawer(title, body) { $("dTitle").textContent = title; $("dBody").innerHTML = body; $("drawer").classList.add("open"); $("scrim").classList.add("open"); }
+function closeDrawer() { $("drawer").classList.remove("open"); $("scrim").classList.remove("open"); }
+$("dClose").onclick = closeDrawer; $("scrim").onclick = closeDrawer;
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".cite"); if (!b) return;
+  const r = refs[b.dataset.ref]; if (!r) return;
+  if (r.kind === "sql") openDrawer(`${r.id} · ${r.purpose}`, `<p style="color:var(--muted);margin-top:0">${r.rowCount} rows · ${r.ms} ms · run under role <code>${esc(role)}</code></p><pre>${esc(r.sql)}</pre><div class="card tablewrap" style="box-shadow:none">${table(r.rows.slice(0, 100))}</div>`);
+  else openDrawer(r.title, `<p style="color:var(--muted);margin-top:0">${esc(r.id)}${r.account ? " · " + esc(r.account) : ""}${r.team ? " · " + esc(r.team) : ""}</p><pre>${esc(r.text)}</pre>`);
+});
+
+$("go").onclick = ask;
+$("q").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(); } });
+
+async function ask() {
+  const question = $("q").value.trim(); if (!question) return;
+  $("go").disabled = true; refs = {};
+  $("run").classList.remove("hidden"); $("steps").innerHTML = ""; $("approvals").innerHTML = ""; $("meta").innerHTML = ""; $("stepCount").textContent = "";
+  $("answer").innerHTML = `<div class="status"><div class="spinner"></div><span id="statusText">Starting…</span></div>`;
+  let answerText = "", steps = 0;
+  const askEdition = edition, askRole = role;
+  try {
+    const res = await fetch("/api/ask", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question, edition: askEdition, role: askRole }) });
+    const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = "";
+    for (;;) {
+      const { done, value } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i; while ((i = buf.indexOf("\n")) >= 0) { const line = buf.slice(0, i); buf = buf.slice(i + 1); if (line) handle(JSON.parse(line)); }
+    }
+  } catch (err) {
+    $("answer").innerHTML = `<b style="color:var(--bad)">Error:</b> ${esc(err.message)}`;
+  }
+  $("go").disabled = false;
+
+  function handle(e) {
+    if (e.type === "status" && $("statusText")) $("statusText").textContent = e.text;
+    if (e.type === "tool_start") {
+      steps++; $("stepCount").textContent = `${steps} step${steps === 1 ? "" : "s"}`;
+      const d = document.createElement("div"); d.className = `step ${e.agent}`; d.id = "s-" + e.id;
+      d.innerHTML = `<span class="dot"></span><div class="top"><span class="who">${e.agent === "verifier" ? "Sonnet verifier" : "Opus"}</span><span class="tool">${esc(e.tool)}</span><span class="sum"><div class="spinner"></div></span></div>${stepInput(e.tool, e.input)}`;
+      $("steps").appendChild(d);
+      if ($("statusText")) $("statusText").textContent = e.tool === "verify_numbers" ? "Verifying numbers…" : e.tool === "propose_actions" ? "Waiting for your approval…" : "Investigating…";
+    }
+    if (e.type === "tool_end") {
+      const d = $("s-" + e.id); if (!d) return;
+      d.classList.add("done"); d.classList.toggle("err", !!e.error);
+      d.querySelector(".sum").innerHTML = (e.ref ? `<b>${esc(e.ref)}</b> · ` : "") + esc(e.summary);
+    }
+    if (e.type === "approval") renderApproval(e, askRole);
+    if (e.type === "approval_result") {
+      const card = $("ap-" + e.approvalId);
+      if (card) card.querySelector(".actions").innerHTML = e.approved
+        ? `<span class="badge ok" style="font-size:12.5px;padding:5px 12px">✓ Approved · ${e.written} written to ${askEdition === "hr" ? "ACME.BRAIN.PEOPLE_ACTIONS" : "ACME.BRAIN.RISK_ALERTS"}</span>`
+        : `<span class="badge neutral" style="font-size:12.5px;padding:5px 12px">Declined · nothing written</span>`;
+      if (e.approved) { delete cache[`${askEdition}|${askRole}|actions`]; updateActionsCount(); }
+    }
+    if (e.type === "answer") answerText = e.text;
+    if (e.type === "error") $("answer").innerHTML = `<b style="color:var(--bad)">Error:</b> ${esc(e.text)}`;
+    if (e.type === "done") {
+      refs = e.refs;
+      if (answerText) $("answer").innerHTML = linkCitations(marked.parse(answerText));
+      const nSql = Object.values(refs).filter((r) => r.kind === "sql").length, nDoc = Object.values(refs).length - nSql;
+      $("meta").innerHTML = [
+        `${icon("clock", 13)} ${(e.ms / 1000).toFixed(1)} s`, `${icon("db", 13)} ${nSql} SQL queries`, `${icon("check", 13)} ${nDoc} cited passages`,
+        `${(e.usage.input + e.usage.output).toLocaleString()} tokens`, `trace ${e.traceId.slice(0, 8)} → AGENT_TRACES`,
+      ].map((x) => `<span class="pill">${x}</span>`).join("");
+    }
+  }
+}
+
+function renderApproval(e, approver) {
+  const hr = e.edition === "hr";
+  const d = document.createElement("div"); d.className = "approval"; d.id = "ap-" + e.approvalId;
+  d.innerHTML = `<div class="head">${icon("shield", 18)}<h3>Approve writing ${e.items.length} ${hr ? "retention plan(s)" : "risk alert(s)"} to Snowflake?</h3></div>
+    <div class="items">${e.items.map((a) => `
+      <div class="item"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge ${esc(a.risk_level)}">${esc(a.risk_level)}</span><b>${esc(hr ? a.team : a.account)}</b>
+      ${hr ? "" : `<span style="color:var(--muted);font-size:12.5px">${money(a.arr_usd)} ARR · renews ${esc(a.renewal_date)}</span>`}</div>
+      <div style="margin:8px 0 0;color:var(--text-2)">${esc(a.summary)}</div>
+      <ul>${a.actions.map((x) => `<li><b>${esc(x.owner)}</b>: ${esc(x.action)} <span style="color:var(--muted)">(by ${esc(x.due_date)})</span>${x.category === "pay" ? ` <span class="badge medium">needs Total Rewards</span>` : ""}</li>`).join("")}</ul></div>`).join("")}</div>
+    <div class="actions"><button class="btn">${icon("check", 15)}Approve &amp; write</button><button class="btn ghost">Decline</button></div>`;
+  const [ok, no] = d.querySelectorAll(".actions .btn");
+  const send = (approved) => fetch("/api/approve", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ approvalId: e.approvalId, approved, approver }) });
+  ok.onclick = () => send(true); no.onclick = () => send(false);
+  $("approvals").appendChild(d);
+}
+
+init();
+</script>
+</body>
+</html>

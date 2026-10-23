@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revenue Guard Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f8f5; --card: #ffffff; --text: #0f172a; --muted: #64748b; --faint: #94a3b8;
+    --border: #e2e8f0; --border-strong: #cbd5e1;
+    --brand: #4327c5; --brand-soft: #f3f1ff; --brand-line: #d4ccfe;
+    --sf: #0b7fc7; --sf-soft: #eef7fd; --sf-line: #b9def5;
+    --ai: #c2410c; --ai-soft: #fff4ec; --ai-line: #fdcfae;
+    --ok: #047857; --ok-soft: #ecfdf5; --warn: #b45309; --warn-soft: #fff8e6; --warn-line: #fcd57a;
+    --code-bg: #f1f5f9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1117; --card: #151b24; --text: #e6edf3; --muted: #9aa7b4; --faint: #6b7785;
+      --border: #263040; --border-strong: #33404f;
+      --brand: #a594ff; --brand-soft: #1d1a33; --brand-line: #3b3470;
+      --sf: #5cb8f0; --sf-soft: #0f2230; --sf-line: #1d4660;
+      --ai: #f5935a; --ai-soft: #2a1a10; --ai-line: #5c3215;
+      --ok: #4fd1a5; --ok-soft: #0f2a22; --warn: #f2bd57; --warn-soft: #2a2210; --warn-line: #5c4a17;
+      --code-bg: #1c2430;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --card: #151b24; --text: #e6edf3; --muted: #9aa7b4; --faint: #6b7785;
+    --border: #263040; --border-strong: #33404f;
+    --brand: #a594ff; --brand-soft: #1d1a33; --brand-line: #3b3470;
+    --sf: #5cb8f0; --sf-soft: #0f2230; --sf-line: #1d4660;
+    --ai: #f5935a; --ai-soft: #2a1a10; --ai-line: #5c3215;
+    --ok: #4fd1a5; --ok-soft: #0f2a22; --warn: #f2bd57; --warn-soft: #2a2210; --warn-line: #5c4a17;
+    --code-bg: #1c2430;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 Inter, system-ui, -apple-system, sans-serif; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 48px 24px 80px; }
+  header { margin-bottom: 36px; }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--brand); }
+  h1 { font-size: 34px; line-height: 1.15; letter-spacing: -0.025em; margin: 8px 0 12px; }
+  .lede { font-size: 17px; color: var(--muted); max-width: 760px; margin: 0; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .pill { font-size: 12.5px; font-weight: 500; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--card); }
+  h2 { font-size: 20px; letter-spacing: -0.015em; margin: 48px 0 6px; }
+  h2 + .sub { color: var(--muted); margin: 0 0 18px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .diagram { padding: 12px; overflow-x: auto; }
+  .diagram svg { display: block; width: 100%; min-width: 860px; height: auto; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12.5px; color: var(--muted); padding: 4px 8px 0; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .card h3 { margin: 0 0 4px; font-size: 15px; }
+  .card .k { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .card ul { margin: 8px 0 0; padding-left: 18px; color: var(--text); }
+  .card li { margin: 3px 0; }
+  .muted { color: var(--muted); }
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12.5px; }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  .flow { counter-reset: step; list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .flow li { counter-increment: step; display: grid; grid-template-columns: 40px 1fr auto; gap: 14px; align-items: start; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .flow li::before { content: counter(step); width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 600; font-size: 13px; background: var(--brand-soft); color: var(--brand); border: 1px solid var(--brand-line); }
+  .flow b { display: block; }
+  .flow .who { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid; }
+  .who.app { color: var(--brand); background: var(--brand-soft); border-color: var(--brand-line); }
+  .who.sf { color: var(--sf); background: var(--sf-soft); border-color: var(--sf-line); }
+  .who.ai { color: var(--ai); background: var(--ai-soft); border-color: var(--ai-line); }
+  .who.human { color: var(--warn); background: var(--warn-soft); border-color: var(--warn-line); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  .tablecard { padding: 6px 8px; overflow-x: auto; }
+  .bar { height: 4px; border-radius: 2px; margin-bottom: 14px; }
+  footer { margin-top: 56px; color: var(--faint); font-size: 13px; border-top: 1px solid var(--border); padding-top: 18px; }
+  /* SVG theming */
+  .s-text { fill: var(--text); font-family: Inter, sans-serif; }
+  .s-muted { fill: var(--muted); font-family: Inter, sans-serif; }
+  .s-mono { fill: var(--muted); font-family: "JetBrains Mono", monospace; }
+  .s-card { fill: var(--card); stroke: var(--border-strong); }
+  .s-app { fill: var(--brand-soft); stroke: var(--brand-line); }
+  .s-app-strong { fill: var(--card); stroke: var(--brand); }
+  .s-sf { fill: var(--sf-soft); stroke: var(--sf-line); }
+  .s-sf-box { fill: var(--card); stroke: var(--sf); }
+  .s-ai { fill: var(--ai-soft); stroke: var(--ai); }
+  .s-warn { fill: var(--warn-soft); stroke: var(--warn); }
+  .s-gov { fill: var(--ok-soft); stroke: var(--ok); }
+  .s-line { stroke: var(--muted); fill: none; stroke-width: 1.5; }
+  .s-line-brand { stroke: var(--brand); fill: none; stroke-width: 1.6; }
+  .s-line-sf { stroke: var(--sf); fill: none; stroke-width: 1.6; }
+  .s-line-ai { stroke: var(--ai); fill: none; stroke-width: 1.6; }
+  .s-line-warn { stroke: var(--warn); fill: none; stroke-width: 1.6; }
+  .s-dash { stroke-dasharray: 5 4; }
+  .s-label-bg { fill: var(--bg); }
+  @media (max-width: 860px) { .grid3, .grid2 { grid-template-columns: 1fr; } h1 { font-size: 27px; } .wrap { padding: 32px 16px 64px; } .flow li { grid-template-columns: 34px 1fr; } .flow .who { grid-column: 2; justify-self: start; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Intelligence at Work Hackathon · Snowflake × Anthropic</div>
+  <h1>Ingestion · Revenue Guard: system architecture</h1>
+  <p class="lede">An agent for a VP of Customer Success that answers <i>“Which renewals are at risk, and what did we promise them?”</i>. It connects meeting commitments, support tickets and product usage in Snowflake, uses Claude to investigate and verify, and writes risk alerts back only after a human approves.</p>
+  <div class="pills">
+    <span class="pill">Track: Internal</span>
+    <span class="pill">Two versions: Revenue · HR</span>
+    <span class="pill">Snowflake = governed source of truth</span>
+    <span class="pill">Claude = investigate · verify · act</span>
+    <span class="pill">All data synthetic, no PII</span>
+  </div>
+</header>
+
+<h2>System architecture</h2>
+<p class="sub">Three parts: the people (personas), a small Node web app that runs the agent loop, and the Snowflake account that holds data, search, governance and write-back.</p>
+<div class="card diagram">
+<svg viewBox="0 0 1040 700" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Architecture diagram: users, web app with Claude agents, Snowflake account, and setup pipeline">
+  <defs>
+    <marker id="a-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--muted)"/></marker>
+    <marker id="a-brand" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--brand)"/></marker>
+    <marker id="a-sf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--sf)"/></marker>
+    <marker id="a-ai" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--ai)"/></marker>
+    <marker id="a-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill: var(--warn)"/></marker>
+  </defs>
+
+  <!-- ===== Users ===== -->
+  <rect x="20" y="105" width="180" height="410" rx="12" class="s-card"/>
+  <text x="36" y="130" class="s-text" font-size="13" font-weight="600">People (browser)</text>
+  <rect x="34" y="145" width="152" height="54" rx="8" class="s-app"/>
+  <text x="46" y="167" class="s-text" font-size="12" font-weight="600">VP Customer Success</text>
+  <text x="46" y="186" class="s-mono" font-size="10">ACME_CS_LEAD</text>
+  <rect x="34" y="209" width="152" height="54" rx="8" class="s-app"/>
+  <text x="46" y="231" class="s-text" font-size="12" font-weight="600">EU CS Manager</text>
+  <text x="46" y="250" class="s-mono" font-size="10">ACME_CSM_EU</text>
+  <text x="36" y="292" class="s-muted" font-size="11.5">Tabs: Ask · Accounts ·</text>
+  <text x="36" y="308" class="s-muted" font-size="11.5">Risk alerts</text>
+  <text x="36" y="332" class="s-muted" font-size="11.5">Citation chips open the</text>
+  <text x="36" y="348" class="s-muted" font-size="11.5">exact SQL + rows or the</text>
+  <text x="36" y="364" class="s-muted" font-size="11.5">transcript moment.</text>
+  <rect x="34" y="448" width="152" height="46" rx="8" class="s-warn"/>
+  <text x="110" y="469" text-anchor="middle" class="s-text" font-size="12" font-weight="600">Approve / Decline</text>
+  <text x="110" y="485" text-anchor="middle" class="s-muted" font-size="10.5">human in the loop</text>
+
+  <!-- ===== Claude API ===== -->
+  <rect x="230" y="18" width="270" height="72" rx="10" class="s-ai"/>
+  <text x="245" y="40" class="s-text" font-size="13" font-weight="600">Anthropic Claude API</text>
+  <text x="245" y="59" class="s-mono" font-size="10.5">claude-opus-5-5 · effort high</text>
+  <text x="245" y="75" class="s-mono" font-size="10.5">claude-sonnet-5-5 · effort medium</text>
+
+  <!-- ===== Web app ===== -->
+  <rect x="230" y="105" width="270" height="410" rx="12" class="s-app"/>
+  <text x="245" y="126" class="s-text" font-size="13" font-weight="600">Web app · Node 24 + TypeScript</text>
+  <rect x="245" y="138" width="165" height="56" rx="8" class="s-app-strong"/>
+  <text x="257" y="160" class="s-text" font-size="12" font-weight="600">server.ts</text>
+  <text x="257" y="178" class="s-mono" font-size="10">/api/ask · /approve · …</text>
+
+  <rect x="245" y="208" width="240" height="150" rx="8" class="s-app-strong"/>
+  <text x="257" y="229" class="s-text" font-size="12.5" font-weight="600">Investigator agent · Opus 5.5</text>
+  <text x="257" y="246" class="s-muted" font-size="11">agent.ts: manual tool-use loop</text>
+  <text x="257" y="270" class="s-mono" font-size="10.5">run_sql</text>
+  <text x="257" y="286" class="s-mono" font-size="10.5">search_knowledge</text>
+  <text x="257" y="302" class="s-mono" font-size="10.5">get_commitments</text>
+  <text x="257" y="318" class="s-mono" font-size="10.5">verify_numbers</text>
+  <text x="257" y="334" class="s-mono" font-size="10.5">propose_risk_alerts</text>
+  <text x="392" y="270" class="s-muted" font-size="10">read-only SQL guard</text>
+  <text x="392" y="286" class="s-muted" font-size="10">Cortex Search</text>
+  <text x="392" y="318" class="s-muted" font-size="10">→ verifier</text>
+  <text x="392" y="334" class="s-muted" font-size="10">→ approval gate</text>
+
+  <rect x="245" y="378" width="240" height="50" rx="8" class="s-app-strong"/>
+  <text x="257" y="399" class="s-text" font-size="12.5" font-weight="600">Verifier agent · Sonnet 5.5</text>
+  <text x="257" y="416" class="s-muted" font-size="11">re-derives each number with its own SQL</text>
+
+  <rect x="245" y="445" width="240" height="56" rx="8" class="s-warn"/>
+  <text x="257" y="467" class="s-text" font-size="12.5" font-weight="600">Approval gate</text>
+  <text x="257" y="485" class="s-muted" font-size="11">writes only after Approve (5 min timeout)</text>
+
+  <!-- ===== Snowflake ===== -->
+  <rect x="530" y="18" width="490" height="522" rx="12" class="s-sf"/>
+  <text x="545" y="40" class="s-text" font-size="13" font-weight="600">Snowflake account · database ACME</text>
+  <rect x="545" y="52" width="460" height="40" rx="8" class="s-gov"/>
+  <text x="560" y="70" class="s-text" font-size="11.5" font-weight="600">Every query runs under the persona's ROLE</text>
+  <text x="560" y="85" class="s-muted" font-size="10.5">Row access policies filter customers by region · manager-only docs hidden</text>
+
+  <rect x="545" y="105" width="250" height="135" rx="8" class="s-sf-box"/>
+  <text x="557" y="125" class="s-text" font-size="12.5" font-weight="600">ACME.PULSE: product + revenue</text>
+  <text x="557" y="145" class="s-mono" font-size="10.5">WORKSPACES · EVENTS (~10M)</text>
+  <text x="557" y="161" class="s-mono" font-size="10.5">INVOICES · SUPPORT_TICKETS</text>
+  <text x="557" y="185" class="s-text" font-size="11" font-weight="600">Semantic view PULSE_ANALYTICS</text>
+  <text x="557" y="200" class="s-muted" font-size="10.5">official metric definitions</text>
+  <text x="557" y="222" class="s-text" font-size="11" font-weight="600">View ACCOUNT_HEALTH</text>
+  <text x="705" y="222" class="s-muted" font-size="10.5">risk signals</text>
+
+  <rect x="545" y="255" width="250" height="115" rx="8" class="s-sf-box"/>
+  <text x="557" y="275" class="s-text" font-size="12.5" font-weight="600">ACME.KNOWLEDGE: documents</text>
+  <text x="557" y="295" class="s-mono" font-size="10.5">DOCUMENTS (33) · DOC_CHUNKS (153)</text>
+  <text x="557" y="320" class="s-text" font-size="11" font-weight="600">Cortex Search KNOWLEDGE_SEARCH</text>
+  <text x="557" y="336" class="s-muted" font-size="10.5">hybrid search over docs, tickets,</text>
+  <text x="557" y="351" class="s-muted" font-size="10.5">meeting transcripts</text>
+
+  <rect x="545" y="385" width="250" height="135" rx="8" class="s-sf-box"/>
+  <text x="557" y="405" class="s-text" font-size="12.5" font-weight="600">ACME.BRAIN: agent memory + actions</text>
+  <text x="557" y="428" class="s-mono" font-size="10.5">COMMITMENTS</text>
+  <text x="652" y="428" class="s-muted" font-size="10.5">promises + status</text>
+  <text x="557" y="450" class="s-mono" font-size="10.5">RISK_ALERTS</text>
+  <text x="652" y="450" class="s-muted" font-size="10.5">approved write-back</text>
+  <text x="557" y="472" class="s-mono" font-size="10.5">AGENT_TRACES</text>
+  <text x="652" y="472" class="s-muted" font-size="10.5">audit trail per run</text>
+
+  <rect x="815" y="105" width="190" height="135" rx="8" class="s-card"/>
+  <text x="827" y="125" class="s-text" font-size="12" font-weight="600">Compute</text>
+  <text x="827" y="145" class="s-mono" font-size="10.5">ACME_WH · XSMALL</text>
+  <text x="827" y="161" class="s-muted" font-size="10.5">auto-suspend 60 s</text>
+  <text x="827" y="190" class="s-text" font-size="12" font-weight="600">Synthetic data</text>
+  <text x="827" y="208" class="s-muted" font-size="10.5">GENERATOR + hashing,</text>
+  <text x="827" y="223" class="s-muted" font-size="10.5">deterministic, no PII</text>
+
+  <rect x="815" y="255" width="190" height="115" rx="8" class="s-ai"/>
+  <text x="827" y="275" class="s-text" font-size="12" font-weight="600">Cortex AI_COMPLETE</text>
+  <text x="827" y="291" class="s-text" font-size="12" font-weight="600">Claude in Snowflake</text>
+  <text x="827" y="312" class="s-muted" font-size="10.5">extracts commitments from</text>
+  <text x="827" y="327" class="s-muted" font-size="10.5">transcripts: owner, due date,</text>
+  <text x="827" y="342" class="s-muted" font-size="10.5">quote, status (JSON schema)</text>
+
+  <rect x="815" y="440" width="190" height="80" rx="8" class="s-gov"/>
+  <text x="827" y="460" class="s-text" font-size="12" font-weight="600">ACME.GOVERNANCE</text>
+  <text x="827" y="478" class="s-mono" font-size="9.5">ACCOUNT_REGION_POLICY</text>
+  <text x="827" y="493" class="s-mono" font-size="9.5">DOC_ACCESS_POLICY</text>
+  <text x="827" y="508" class="s-mono" font-size="9.5">REGION_ENTITLEMENTS</text>
+
+  <!-- ===== Arrows: users <-> app ===== -->
+  <line x1="200" y1="158" x2="243" y2="158" class="s-line-brand" marker-end="url(#a-brand)"/>
+  <line x1="243" y1="178" x2="200" y2="178" class="s-line-brand s-dash" marker-end="url(#a-brand)"/>
+  <line x1="186" y1="471" x2="243" y2="471" class="s-line-warn" marker-end="url(#a-warn)"/>
+  <!-- server -> agent -->
+  <line x1="327" y1="194" x2="327" y2="206" class="s-line-brand" marker-end="url(#a-brand)"/>
+  <!-- agent <-> Claude API -->
+  <line x1="455" y1="206" x2="455" y2="92" class="s-line-ai" marker-start="url(#a-ai)" marker-end="url(#a-ai)"/>
+  <!-- agent <-> verifier -->
+  <line x1="300" y1="358" x2="300" y2="376" class="s-line-brand s-dash" marker-end="url(#a-brand)"/>
+  <line x1="330" y1="376" x2="330" y2="360" class="s-line-brand s-dash" marker-end="url(#a-brand)"/>
+  <!-- agent -> verifier -> approval -->
+  <line x1="365" y1="428" x2="365" y2="443" class="s-line-warn" marker-end="url(#a-warn)"/>
+
+  <!-- ===== Arrows: app -> Snowflake ===== -->
+  <line x1="485" y1="225" x2="543" y2="225" class="s-line-sf" marker-end="url(#a-sf)"/>
+  <line x1="485" y1="300" x2="543" y2="300" class="s-line-sf" marker-end="url(#a-sf)"/>
+  <path d="M485,343 L515,343 L515,420 L543,420" class="s-line-sf" marker-end="url(#a-sf)"/>
+  <line x1="485" y1="490" x2="543" y2="490" class="s-line-warn" marker-end="url(#a-warn)"/>
+  <!-- Cortex AI: knowledge -> AI_COMPLETE -> BRAIN -->
+  <line x1="795" y1="312" x2="813" y2="312" class="s-line-ai" marker-end="url(#a-ai)"/>
+  <path d="M910,370 L910,415 L797,415" class="s-line-ai" marker-end="url(#a-ai)"/>
+
+  <!-- arrow labels -->
+  <rect x="203" y="139" width="34" height="13" rx="3" class="s-label-bg"/>
+  <text x="220" y="149" text-anchor="middle" class="s-muted" font-size="9.5">ask</text>
+  <text x="220" y="194" text-anchor="middle" class="s-muted" font-size="9.5">stream</text>
+  <text x="214" y="464" text-anchor="middle" class="s-muted" font-size="9.5">approve</text>
+  <text x="514" y="218" text-anchor="middle" class="s-muted" font-size="9.5">SQL</text>
+  <text x="514" y="293" text-anchor="middle" class="s-muted" font-size="9.5">search</text>
+  <text x="514" y="483" text-anchor="middle" class="s-muted" font-size="9.5">INSERT</text>
+  <text x="853" y="408" text-anchor="middle" class="s-muted" font-size="9.5">writes COMMITMENTS</text>
+
+  <!-- ===== Setup pipeline ===== -->
+  <rect x="20" y="560" width="1000" height="125" rx="12" class="s-card"/>
+  <text x="36" y="584" class="s-text" font-size="13" font-weight="600">Setup pipeline (run once, before the demo)</text>
+  <rect x="36" y="600" width="175" height="66" rx="8" class="s-app"/>
+  <text x="48" y="621" class="s-text" font-size="11.5" font-weight="600">data/sources/</text>
+  <text x="48" y="638" class="s-muted" font-size="10.5">Acme docs, tickets and</text>
+  <text x="48" y="653" class="s-muted" font-size="10.5">13 meeting notes</text>
+  <rect x="241" y="600" width="175" height="66" rx="8" class="s-app"/>
+  <text x="253" y="621" class="s-text" font-size="11.5" font-weight="600">build-knowledge-sql.mjs</text>
+  <text x="253" y="638" class="s-muted" font-size="10.5">chunks by heading / time</text>
+  <text x="253" y="653" class="s-muted" font-size="10.5">window → 03_knowledge.sql</text>
+  <rect x="446" y="600" width="175" height="66" rx="8" class="s-app"/>
+  <text x="458" y="621" class="s-text" font-size="11.5" font-weight="600">snowflake/01–06.sql</text>
+  <text x="458" y="638" class="s-muted" font-size="10.5">setup · seed · search ·</text>
+  <text x="458" y="653" class="s-muted" font-size="10.5">governance · AI extraction</text>
+  <rect x="651" y="600" width="175" height="66" rx="8" class="s-app"/>
+  <text x="663" y="621" class="s-text" font-size="11.5" font-weight="600">run-sql.ts</text>
+  <text x="663" y="638" class="s-muted" font-size="10.5">npm run setup, as</text>
+  <text x="663" y="653" class="s-muted" font-size="10.5">ACCOUNTADMIN (~2 min)</text>
+  <line x1="211" y1="633" x2="239" y2="633" class="s-line" marker-end="url(#a-muted)"/>
+  <line x1="416" y1="633" x2="444" y2="633" class="s-line" marker-end="url(#a-muted)"/>
+  <line x1="621" y1="633" x2="649" y2="633" class="s-line" marker-end="url(#a-muted)"/>
+  <path d="M826,633 L930,633 L930,542" class="s-line-sf" marker-end="url(#a-sf)"/>
+  <text x="940" y="600" class="s-muted" font-size="10">creates</text>
+  <text x="940" y="613" class="s-muted" font-size="10">+ seeds</text>
+</svg>
+<div class="legend">
+  <span><i style="background:var(--brand-soft);border-color:var(--brand)"></i>Our code (web app)</span>
+  <span><i style="background:var(--sf-soft);border-color:var(--sf)"></i>Snowflake</span>
+  <span><i style="background:var(--ai-soft);border-color:var(--ai)"></i>Claude</span>
+  <span><i style="background:var(--warn-soft);border-color:var(--warn)"></i>Human approval / write path</span>
+  <span><i style="background:var(--ok-soft);border-color:var(--ok)"></i>Governance</span>
+</div>
+</div>
+
+<h2>Data flow: one question, end to end</h2>
+<p class="sub">Example: <i>“Which Enterprise accounts renewing in the next 60 days are at risk, and what did we promise them?”</i></p>
+<ol class="flow">
+  <li><div><b>Ask as a persona</b><span class="muted">The user picks a persona (Snowflake role) and asks. The browser POSTs to <code>/api/ask</code> and receives a live stream of events (NDJSON): steps, approval cards, the answer.</span></div><span class="who app">Web app</span></li>
+  <li><div><b>Plan</b><span class="muted">Claude Opus 5.5 gets the question, the persona and a schema guide (semantic view, health view, commitments). It decides which tools to call, often several in parallel.</span></div><span class="who ai">Claude</span></li>
+  <li><div><b>Find the “how much”</b><span class="muted"><code>run_sql</code> queries <code>ACCOUNT_HEALTH</code> and the <code>PULSE_ANALYTICS</code> semantic view: ARR, days to renewal, usage change, urgent tickets, CSAT. A guard allows only one read-only statement; each result gets a citation id (<code>q1</code>, <code>q2</code>…).</span></div><span class="who sf">Snowflake</span></li>
+  <li><div><b>Find the “why”</b><span class="muted"><code>get_commitments</code> lists overdue promises extracted earlier by Claude in Cortex. <code>search_knowledge</code> runs Cortex Search over transcripts and tickets. Results about accounts outside the role's region are withheld, based on what Snowflake lets that role see.</span></div><span class="who sf">Snowflake</span></li>
+  <li><div><b>Verify</b><span class="muted"><code>verify_numbers</code> hands the key figures to a separate Claude Sonnet 5.5 agent. It writes its own SQL, re-derives each number and returns pass / fail. Failed numbers must be fixed before any alert is proposed.</span></div><span class="who ai">Claude</span></li>
+  <li><div><b>Propose and approve</b><span class="muted"><code>propose_risk_alerts</code> shows an approval card: risk level, ARR, renewal date, summary and owned next steps. The agent waits for a human to click Approve or Decline.</span></div><span class="who human">Human</span></li>
+  <li><div><b>Write back</b><span class="muted">On approval, alerts are inserted into <code>ACME.BRAIN.RISK_ALERTS</code> under the same role, with the approver recorded. Nothing is written on decline or after a 5-minute timeout.</span></div><span class="who sf">Snowflake</span></li>
+  <li><div><b>Answer and audit</b><span class="muted">The cited answer is streamed to the UI, where orange chips open the SQL and rows and blue chips open the transcript. The full run (steps, tokens, latency) is saved to <code>ACME.BRAIN.AGENT_TRACES</code>.</span></div><span class="who app">Web app</span></li>
+</ol>
+
+<h2>Tech stack</h2>
+<p class="sub">Small on purpose: one Node process with no build step, and everything else in Snowflake.</p>
+<div class="grid3">
+  <div class="card"><div class="bar" style="background:var(--sf)"></div><div class="k" style="color:var(--sf)">Snowflake</div>
+    <ul>
+      <li>Tables, views, <b>semantic view</b></li>
+      <li><b>Cortex Search</b> (hybrid retrieval)</li>
+      <li><b>Cortex AI_COMPLETE</b> with Claude</li>
+      <li>Roles + <b>row access policies</b></li>
+      <li><code>GENERATOR</code> for synthetic data</li>
+      <li>Warehouse <code>ACME_WH</code> (XSMALL)</li>
+    </ul></div>
+  <div class="card"><div class="bar" style="background:var(--ai)"></div><div class="k" style="color:var(--ai)">Claude</div>
+    <ul>
+      <li><b>Opus 5.5</b>: investigator, effort high, adaptive thinking</li>
+      <li><b>Sonnet 5.5</b>: verifier, effort medium</li>
+      <li>Tool use, manual agent loop</li>
+      <li>Server-side refusal fallback (<code>fallbacks: "default"</code>)</li>
+      <li>Claude in Cortex for extraction</li>
+    </ul></div>
+  <div class="card"><div class="bar" style="background:var(--brand)"></div><div class="k" style="color:var(--brand)">Application</div>
+    <ul>
+      <li><b>Node 24</b>, TypeScript via type stripping</li>
+      <li><code>@anthropic-ai/sdk</code>, <code>snowflake-sdk</code></li>
+      <li>Plain <code>node:http</code> server, NDJSON streaming</li>
+      <li>Single-file HTML UI (Ingestion design)</li>
+      <li>Public GitHub repo</li>
+    </ul></div>
+</div>
+
+<h2>Data model</h2>
+<p class="sub">Four schemas in database <code>ACME</code>. All data is synthetic and deterministic, so every run produces the same world.</p>
+<div class="card tablecard">
+<table>
+  <thead><tr><th>Schema</th><th>Objects</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><b>PULSE</b></td><td class="mono">WORKSPACES (6,000) · EVENTS (~10M) · INVOICES · SUPPORT_TICKETS (~28K) · PULSE_ANALYTICS (semantic view) · ACCOUNT_HEALTH (view)</td><td>Product usage, revenue and support. Built-in stories: Android 4.2 crashes, INC-2291 billing incident, DI-4410 EU delays, Reports v1 deprecation.</td></tr>
+    <tr><td><b>KNOWLEDGE</b></td><td class="mono">DOCUMENTS (33) · DOC_CHUNKS (153) · KNOWLEDGE_SEARCH (Cortex Search)</td><td>Policies, product docs, tickets and 13 meeting notes, chunked by heading or by transcript time window.</td></tr>
+    <tr><td><b>BRAIN</b></td><td class="mono">COMMITMENTS · RISK_ALERTS · AGENT_TRACES</td><td>What Claude extracts and what the agent writes back, each with citations and an audit trail.</td></tr>
+    <tr><td><b>GOVERNANCE</b></td><td class="mono">REGION_ENTITLEMENTS · WORKSPACE_REGION · ACCOUNT_REGION_POLICY · DOC_ACCESS_POLICY</td><td>Who may see which region's customers and which documents. Not granted to personas.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Story accounts</h2>
+<p class="sub">Eight named Enterprise customers whose call notes match their numbers, so the agent can connect the “why” with the “how much”.</p>
+<div class="card tablecard">
+<table>
+  <thead><tr><th>Account</th><th>Region</th><th>Renewal</th><th>What the data and notes show</th></tr></thead>
+  <tbody>
+    <tr><td><b>Kestrel Bank</b></td><td>eu-central</td><td>2026-11-30</td><td>EU ingestion delays and billing incident, usage down ~40% since Oct 1, root-cause doc and credit note overdue</td></tr>
+    <tr><td><b>Cobalt Logistics</b></td><td>eu-central</td><td>2026-11-15</td><td>Champion left, usage down ~55% since Sep 1, value summary and CFO meeting not done</td></tr>
+    <tr><td><b>Nord Games</b></td><td>us-east</td><td>2026-12-15</td><td>Android 15 crashes on 4.2, mobile-heavy, fix slipped to November</td></tr>
+    <tr><td><b>Harbor Fintech</b></td><td>us-east</td><td>2026-12-01</td><td>SSO lockouts, urgent tickets, follow-ups delivered</td></tr>
+    <tr><td><b>Atlas Retail</b></td><td>us-east</td><td>2027-01-10</td><td>Heavy Reports v1 user, migration workshop not scheduled</td></tr>
+    <tr><td><b>Brightline Health</b></td><td>us-east</td><td>2027-01-31</td><td>QBR promises: SSO runbook and permission doc late</td></tr>
+    <tr><td><b>Lumio Learning</b></td><td>us-east</td><td>2027-03-01</td><td>Healthy and growing, expansion quote pending (control)</td></tr>
+    <tr><td><b>Fern Media</b></td><td>us-east</td><td>2027-02-15</td><td>Healthy, all follow-ups done (control)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>HR version (People Guard)</h2>
+<p class="sub">Same app, same agent design, same Acme world. A sidebar switch selects the <b>HR</b> version: an HR Business Partner asks <i>“Which teams are at risk of losing people, and what did we promise them?”</i></p>
+<div class="card tablecard">
+<table>
+  <thead><tr><th></th><th>Revenue</th><th>HR</th></tr></thead>
+  <tbody>
+    <tr><td><b>User</b></td><td>VP Customer Success</td><td>HR Business Partner</td></tr>
+    <tr><td><b>Promises from</b></td><td>Customer calls</td><td>1:1s, team retros, staffing reviews (<code>data/sources/people/</code>)</td></tr>
+    <tr><td><b>Signals</b></td><td>Usage trend, urgent tickets, CSAT, days to renewal</td><td>After-hours work, pages, PTO taken, eNPS and intent-to-stay, voluntary exits</td></tr>
+    <tr><td><b>Snowflake data</b></td><td class="mono">ACME.PULSE · ACCOUNT_HEALTH · PULSE_ANALYTICS</td><td class="mono">ACME.PEOPLE (EMPLOYEES ~195, WORKLOAD_WEEKLY, SURVEY_RESPONSES) · TEAM_HEALTH · PEOPLE_ANALYTICS</td></tr>
+    <tr><td><b>Claude in Cortex</b></td><td class="mono">06 → BRAIN.COMMITMENTS</td><td class="mono">hr/14 → BRAIN.PEOPLE_COMMITMENTS (open / done / broken)</td></tr>
+    <tr><td><b>Write-back</b></td><td class="mono">BRAIN.RISK_ALERTS</td><td><span class="mono">BRAIN.PEOPLE_ACTIONS</span>; pay-affecting steps routed to Total Rewards</td></tr>
+    <tr><td><b>Personas</b></td><td class="mono">ACME_CS_LEAD · ACME_CSM_EU</td><td class="mono">ACME_HRBP · ACME_MGR_DATA_INFRA</td></tr>
+    <tr><td><b>Governance</b></td><td>Row access by customer region</td><td>Row access by team · <b>salary masking policy</b> · <b>aggregation policy</b> (survey groups of 5+) · HR notes for HRBPs only</td></tr>
+  </tbody>
+</table>
+</div>
+<div class="grid3" style="margin-top:14px">
+  <div class="card"><h3>Linked story</h3><p class="muted" style="margin:6px 0 0">The incidents that threaten renewals (DI-4410, Android 4.2, INC-2291) are the same ones burning out Data Infra, Product Eng (mobile) and Payments. Mei Chen's sick leave leaves Kestrel Bank and Cobalt Logistics uncovered in both versions.</p></div>
+  <div class="card"><h3>Story teams</h3><p class="muted" style="margin:6px 0 0"><b>Data Infra</b>: after-hours work ~3× since Oct 1, 2 voluntary exits, rotation and comp-day promises overdue, Principal Lena Okafor is the only person who can debug the EU pipeline. <b>Product Eng (mobile)</b>: weekend crunch, the “no weekend work” promise was broken. <b>Payments</b>: recovered (control).</p></div>
+  <div class="card"><h3>HR guardrails</h3><p class="muted" style="margin:6px 0 0">Team-level by default. No individual “flight risk” scores. Never used for performance or disciplinary decisions. Individuals named only when they appear in a promise.</p></div>
+</div>
+
+<h2>Trust and governance</h2>
+<div class="grid2">
+  <div class="card"><h3>Enforced by Snowflake</h3>
+    <ul>
+      <li>One connection per persona role. The app never filters customer data itself.</li>
+      <li><code>ACCOUNT_REGION_POLICY</code> on workspaces, events, invoices, tickets, commitments and alerts.</li>
+      <li><code>DOC_ACCESS_POLICY</code> hides manager-only documents from non-leads.</li>
+      <li>The same question as the EU CSM returns only eu-central accounts.</li>
+    </ul></div>
+  <div class="card"><h3>Enforced by the agent design</h3>
+    <ul>
+      <li>Read-only SQL guard: one statement, SELECT / WITH / SHOW / DESCRIBE only.</li>
+      <li>Every number cites a query; every document claim cites a chunk.</li>
+      <li>Independent verifier before any action.</li>
+      <li>Writes only through the approval gate; every run is saved as a trace.</li>
+    </ul></div>
+</div>
+
+<h2>How it maps to the judging criteria</h2>
+<div class="card tablecard">
+<table>
+  <thead><tr><th>Criterion</th><th>Points</th><th>How we address it</th></tr></thead>
+  <tbody>
+    <tr><td><b>Impact</b></td><td>35</td><td>A specific user (VP Customer Success) and a measurable outcome: ARR at risk found and assigned in under a minute instead of a weekly manual review.</td></tr>
+    <tr><td><b>Demo</b></td><td>30</td><td>Live end to end: question → trace → verified answer → approval → rows in Snowflake → persona switch.</td></tr>
+    <tr><td><b>Creativity</b></td><td>25</td><td>Promises from meetings become structured data and are joined with usage. A second model checks the first.</td></tr>
+    <tr><td><b>Snowflake + Claude craft</b></td><td>10</td><td>Semantic view, Cortex Search, Claude in Cortex, row access policies and governed write-back, used together with Claude on the API.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<footer>Ingestion · Revenue Guard. Built during the Intelligence at Work hackathon (2026-10-23), inspired by our earlier Ingestion company-brain project. All data is fictional.</footer>
+</div>
+</body>
+</html>
