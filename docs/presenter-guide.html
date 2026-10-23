@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>People Guard Presenter Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f8f7; --card: #ffffff; --text: #0f172a; --muted: #5b6b7d; --faint: #94a3b8;
+    --border: #e2e8f0; --border-strong: #cbd5e1;
+    --brand: #0f766e; --brand-soft: #ecfdf8; --brand-line: #a7f3d0;
+    --sf: #0b7fc7; --sf-soft: #eef7fd; --ai: #c2410c; --ai-soft: #fff4ec;
+    --warn: #b45309; --warn-soft: #fff8e6; --warn-line: #fcd57a; --bad: #b91c1c; --bad-soft: #fef2f2;
+    --code-bg: #f1f5f9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1117; --card: #151b24; --text: #e6edf3; --muted: #9aa7b4; --faint: #6b7785;
+      --border: #263040; --border-strong: #33404f;
+      --brand: #4fd1c5; --brand-soft: #0f2a28; --brand-line: #1f5c57;
+      --sf: #5cb8f0; --sf-soft: #0f2230; --ai: #f5935a; --ai-soft: #2a1a10;
+      --warn: #f2bd57; --warn-soft: #2a2210; --warn-line: #5c4a17; --bad: #f87171; --bad-soft: #2a1414;
+      --code-bg: #1c2430;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --card: #151b24; --text: #e6edf3; --muted: #9aa7b4; --faint: #6b7785;
+    --border: #263040; --border-strong: #33404f;
+    --brand: #4fd1c5; --brand-soft: #0f2a28; --brand-line: #1f5c57;
+    --sf: #5cb8f0; --sf-soft: #0f2230; --ai: #f5935a; --ai-soft: #2a1a10;
+    --warn: #f2bd57; --warn-soft: #2a2210; --warn-line: #5c4a17; --bad: #f87171; --bad-soft: #2a1414;
+    --code-bg: #1c2430;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15.5px/1.65 Inter, system-ui, sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 40px 20px 80px; }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--brand); }
+  h1 { font-size: 32px; line-height: 1.15; letter-spacing: -0.02em; margin: 8px 0 10px; }
+  h2 { font-size: 21px; letter-spacing: -0.015em; margin: 44px 0 6px; padding-top: 8px; }
+  h3 { font-size: 16px; margin: 18px 0 6px; }
+  .lede { color: var(--muted); font-size: 17px; margin: 0; }
+  .sub { color: var(--muted); margin: 0 0 14px; }
+  nav.toc { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; margin: 24px 0 8px; columns: 2; column-gap: 28px; font-size: 14px; }
+  nav.toc a { color: var(--brand); text-decoration: none; display: block; padding: 2px 0; break-inside: avoid; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin: 12px 0; }
+  .say { border-left: 4px solid var(--brand); background: var(--brand-soft); border-radius: 0 12px 12px 0; padding: 12px 16px; margin: 10px 0; font-size: 16px; }
+  .say b { color: var(--brand); }
+  .do { border-left: 4px solid var(--sf); background: var(--sf-soft); border-radius: 0 12px 12px 0; padding: 10px 16px; margin: 10px 0; font-size: 14.5px; }
+  .warn { border-left: 4px solid var(--warn); background: var(--warn-soft); border-radius: 0 12px 12px 0; padding: 10px 16px; margin: 10px 0; font-size: 14.5px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 1px 7px; border-radius: 5px; margin-right: 6px; }
+  .tag.say { background: var(--brand); color: var(--card); border: 0; padding: 1px 7px; margin: 0 6px 0 0; font-size: 11px; }
+  .tag.do { background: var(--sf); color: var(--card); border: 0; padding: 1px 7px; margin: 0 6px 0 0; font-size: 11px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  tr:last-child td { border-bottom: 0; }
+  .tablecard { padding: 4px 8px; overflow-x: auto; }
+  code { font-family: "JetBrains Mono", monospace; font-size: 12.5px; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  .layers { display: grid; gap: 10px; }
+  .layer { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .num { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--brand-soft); color: var(--brand); border: 1px solid var(--brand-line); }
+  .time { font-family: "JetBrains Mono", monospace; font-size: 12.5px; color: var(--brand); font-weight: 600; white-space: nowrap; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  details { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 16px; margin: 8px 0; }
+  details summary { cursor: pointer; font-weight: 600; }
+  details p { margin: 8px 0 4px; color: var(--text); }
+  ul { padding-left: 20px; } li { margin: 3px 0; }
+  .muted { color: var(--muted); }
+  .arch { display: grid; gap: 8px; margin: 12px 0; }
+  .tier { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--card); }
+  .tier .lbl { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
+  .tier.ui .lbl { color: var(--muted); } .tier.app .lbl { color: var(--brand); } .tier.ai .lbl { color: var(--ai); } .tier.sf .lbl { color: var(--sf); }
+  .tier.ai { background: var(--ai-soft); } .tier.sf { background: var(--sf-soft); } .tier.app { background: var(--brand-soft); }
+  .boxes { display: flex; flex-wrap: wrap; gap: 8px; }
+  .box { flex: 1 1 150px; background: var(--card); border: 1px solid var(--border-strong); border-radius: 9px; padding: 8px 10px; font-size: 13px; line-height: 1.4; }
+  .box b { display: block; font-size: 13.5px; }
+  .arrow { text-align: center; color: var(--faint); font-size: 13px; line-height: 1.2; }
+  @media (max-width: 760px) { nav.toc { columns: 1; } .grid2 { grid-template-columns: 1fr; } h1 { font-size: 26px; } }
+  @media print { nav.toc { display: none; } h2 { break-before: auto; } .card, details, .layer { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="eyebrow">Intelligence at Work Hackathon · Presenter guide</div>
+<h1>Ingestion · People Guard</h1>
+<p class="lede">Everything you need to present: what the system is in plain words, the 3-minute script with clicks, how each point from the kickoff talk and the judging criteria is covered, the demo runbook with fallbacks, and answers to likely questions.</p>
+
+<nav class="toc">
+  <a href="#s1">1. The system in 30 seconds</a>
+  <a href="#s2">2. How it works, in plain words</a>
+  <a href="#s2b">2b. Architecture in detail</a>
+  <a href="#s3">3. Words you may need to explain</a>
+  <a href="#s4">4. The 3-minute pitch script</a>
+  <a href="#s5">5. Coverage map: what the organisers asked for</a>
+  <a href="#s6">6. Demo runbook and fallbacks</a>
+  <a href="#s7">7. Q&amp;A: likely questions and short answers</a>
+  <a href="#s8">8. Numbers cheat sheet</a>
+  <a href="#s9">9. Be honest about</a>
+</nav>
+
+<!-- ======================================================= 1 -->
+<h2 id="s1">1. The system in 30 seconds</h2>
+<div class="say"><b>Say:</b> “People Guard is an HR agent built on Snowflake and Claude. It tells an HR Business Partner which teams are about to burn out or lose people, and which promises we made them that we haven't kept. It also approves time off without breaking on-call coverage, and prepares performance calibration. Every number is checked by a second model, nothing is saved until a human approves, and Snowflake decides who can see what.”</div>
+<p class="muted">If you remember only one line: <b>“Snowflake governs. Claude reasons and verifies. People decide.”</b></p>
+
+<!-- ======================================================= 2 -->
+<h2 id="s2">2. How it works, in plain words</h2>
+<p class="sub">Think of it as four layers, from the data at the bottom to the person at the top.</p>
+<div class="layers">
+  <div class="layer"><div class="num">1</div><div><b>The data lives in Snowflake (the “single source of truth”).</b><br>
+    A fictional company, Acme, with 187 employees in 14 teams. For each person we have workload per week (after-hours hours, pager alerts, days off), anonymous pulse surveys, performance reviews and goals, time-off requests, and the on-call schedule. We also loaded HR notes (1:1s, team retros, staffing reviews) and policies (PTO, on-call recovery).<br>
+    <span class="muted">Ready-made summaries do the maths:</span> <code>TEAM_HEALTH</code> (one row per team with all risk signals), <code>TIME_OFF_REVIEW</code> (one row per request with the policy checks) and <code>PERFORMANCE_SUMMARY</code> (rating mix per team).</div></div>
+  <div class="layer"><div class="num">2</div><div><b>Snowflake enforces the privacy rules, not our app.</b><br>
+    Each user type is a Snowflake <b>role</b>. The HR Business Partner sees all teams. The Data Infra Manager sees only their own team, salaries are hidden from them, and sick or parental leave shows as “leave”. Anyone can read survey answers only in groups of 5 or more. HR notes are visible to HR only.<br>
+    <span class="muted">Even if the AI tried, the database would not return what the role may not see.</span></div></div>
+  <div class="layer"><div class="num">3</div><div><b>Claude does the thinking, in three roles.</b><br>
+    <b>Claude Opus 5.5</b> is the <i>investigator</i>. It decides which questions to ask the data, runs the SQL, searches the HR notes, and writes the answer with citations.<br>
+    <b>Claude Sonnet 5.5</b> is the <i>verifier</i>. Before anything is proposed, it re-calculates every key number with its own SQL and says pass or fail.<br>
+    <b>Claude inside Snowflake</b> (Cortex <code>AI_COMPLETE</code>) is the <i>reader</i>. Ahead of time it read every HR note and pulled out each <b>promise</b> a manager made (who, to whom, by when, the exact quote), plus whether a later note says it was done, late or broken.</div></div>
+  <div class="layer"><div class="num">4</div><div><b>A human approves every action.</b><br>
+    The agent proposes retention plans or time-off decisions on an <b>approval card</b>. Nothing is written to Snowflake until someone clicks <i>Approve</i>. Anything that touches pay is routed to Total Rewards and never executed by the agent. Every run is logged (<code>AGENT_TRACES</code>) for audit.</div></div>
+</div>
+
+<h3>One question, step by step (what the audience sees on screen)</h3>
+<table class="card tablecard">
+  <tr><th>On screen</th><th>What is happening</th></tr>
+  <tr><td><b>Ask</b> (click an example)</td><td>The browser sends the question plus the persona (Snowflake role) to the agent.</td></tr>
+  <tr><td>Trace: <code>run_sql</code></td><td>Opus queries Snowflake under that role, for example <code>TEAM_HEALTH</code>. Every result gets an id like <b>q1</b>.</td></tr>
+  <tr><td>Trace: <code>get_commitments</code>, <code>search_knowledge</code></td><td>Promises extracted from the notes, and Cortex Search over 1:1s and retros, explain the <i>why</i> behind the numbers.</td></tr>
+  <tr><td>Trace: <code>verify_numbers</code> (cyan “Sonnet verifier” steps)</td><td>The second model re-checks the figures. Failed figures are fixed or dropped.</td></tr>
+  <tr><td><b>Approval card</b></td><td>The proposed plans or decisions, with owners and dates. Click Approve, and they are written to Snowflake.</td></tr>
+  <tr><td><b>Answer</b> with orange <b>q</b> chips and blue <b>doc</b> chips</td><td>Click a chip to see the exact SQL and rows, or the exact line in the note.</td></tr>
+</table>
+
+<!-- ======================================================= 2b -->
+<h2 id="s2b">2b. Architecture in detail</h2>
+<p class="sub">Use this if a judge asks “how is it built?”. Four tiers; every arrow down runs under the persona's Snowflake role.</p>
+
+<div class="arch">
+  <div class="tier ui"><div class="lbl">Surface · browser</div>
+    <div class="boxes">
+      <div class="box"><b>Single-page web app</b><code>web/index.html</code>: sidebar, Overview KPIs, Teams, Ask, Retention plans, Time off</div>
+      <div class="box"><b>Persona switcher</b>HR Business Partner or Data Infra Manager (each one is a Snowflake role)</div>
+      <div class="box"><b>Live trace + approvals</b>Streamed steps, approval cards, citation drawer (SQL and source notes)</div>
+    </div></div>
+  <div class="arrow">▼ HTTP · <code>/api/ask</code> streams NDJSON events · <code>/api/approve</code> · <code>/api/table</code> · <code>/api/actions</code></div>
+  <div class="tier app"><div class="lbl">Agent server · Node 24 + TypeScript</div>
+    <div class="boxes">
+      <div class="box"><b><code>src/server.ts</code></b>HTTP + streaming; waits up to 5 min for a human approval</div>
+      <div class="box"><b><code>src/agent.ts</code></b>Tool-use loop, 7 tools, verifier call, approval and write-back, trace logging</div>
+      <div class="box"><b><code>src/editions.ts</code></b>Personas, schema guide, HR mission and privacy rules in the system prompt</div>
+      <div class="box"><b><code>src/snowflake.ts</code></b>One connection per role, <code>USE SECONDARY ROLES NONE</code></div>
+    </div></div>
+  <div class="arrow">▼ Claude API (<code>@anthropic-ai/sdk</code>) &nbsp;·&nbsp; ▼ Snowflake SQL (<code>snowflake-sdk</code>)</div>
+  <div class="tier ai"><div class="lbl">Intelligence · Claude</div>
+    <div class="boxes">
+      <div class="box"><b>Claude Opus 5.5 · investigator</b>Effort high. Plans, calls tools, writes the cited answer, proposes actions. Server-side fallback if overloaded.</div>
+      <div class="box"><b>Claude Sonnet 5.5 · verifier</b>Effort medium. Gets only the claims, re-derives each number with its own read-only SQL, returns pass/fail.</div>
+      <div class="box"><b>Claude in Cortex · reader</b><code>AI_COMPLETE</code> with a JSON schema, run in SQL ahead of time: notes → promises table.</div>
+    </div></div>
+  <div class="arrow">▼ every query runs as the persona's role</div>
+  <div class="tier sf"><div class="lbl">Governed data · Snowflake <code>ACME</code> database</div>
+    <div class="boxes">
+      <div class="box"><b>Raw HR tables</b>Employees, teams, weekly workload, pulse surveys, reviews, goals, feedback, time-off requests, on-call schedule, comp days</div>
+      <div class="box"><b>Views (the maths)</b><code>TEAM_HEALTH</code>, <code>SURVEY_TEAM_SCORES</code>, <code>TIME_OFF_REVIEW</code>, <code>TEAM_COVERAGE_WEEKLY</code>, <code>PERFORMANCE_SUMMARY</code>, <code>PERFORMANCE_COMPETENCIES</code></div>
+      <div class="box"><b>Semantic view</b><code>PEOPLE_ANALYTICS</code>: official metric definitions</div>
+      <div class="box"><b>Knowledge</b>HR notes + policies, chunked; Cortex Search <code>KNOWLEDGE_SEARCH</code>; <code>COMMITMENTS</code> (promises); graph <code>KG_ENTITIES</code> / <code>KG_RELATIONS</code></div>
+      <div class="box"><b>Policies</b>Row access (team, documents), masking (salary, leave type), aggregation (surveys, 5+)</div>
+      <div class="box"><b>Write-back <code>ACME.BRAIN</code></b>Approved retention plans, time-off decisions, <code>AGENT_TRACES</code> audit log</div>
+    </div></div>
+</div>
+
+<h3>The 7 agent tools</h3>
+<table class="card tablecard">
+  <tr><th>Tool</th><th>What it does</th><th>Snowflake object</th></tr>
+  <tr><td><code>run_sql</code></td><td>Read-only SQL under the persona's role; each result gets an id (q1, q2…) used as a citation</td><td>Views, semantic view</td></tr>
+  <tr><td><code>search_knowledge</code></td><td>Search 1:1s, retros, staffing reviews and policies; results filtered to what the persona may read</td><td>Cortex Search</td></tr>
+  <tr><td><code>get_commitments</code></td><td>Promises made to a team: owner, due date, status, exact quote</td><td><code>COMMITMENTS</code> (built by Claude in Cortex)</td></tr>
+  <tr><td><code>explore_graph</code></td><td>Follow ownership and dependencies (“if Lena left, which services and customers are exposed?”)</td><td>Knowledge graph, recursive CTE</td></tr>
+  <tr><td><code>verify_numbers</code></td><td>Send the claims to the Sonnet verifier; it re-runs its own SQL</td><td>Same views, read-only</td></tr>
+  <tr><td><code>propose_actions</code></td><td>Retention plans with owner and due date → approval card</td><td><code>BRAIN</code> plans table (after approval)</td></tr>
+  <tr><td><code>propose_time_off_decisions</code></td><td>Approve / approve with swap / reschedule per request → approval table</td><td><code>TIME_OFF_DECISIONS</code> (after approval)</td></tr>
+</table>
+
+<h3>Lifecycle of one request</h3>
+<ol>
+  <li>The browser posts the question and persona to <code>/api/ask</code>.</li>
+  <li>The server opens (or reuses) the Snowflake connection for that role with secondary roles off, so only that role's grants and policies apply.</li>
+  <li>Opus gets the system prompt (mission, schema guide, privacy rules) and loops: think → call a tool → read the result, typically 10–20 times. Each step streams to the trace.</li>
+  <li>Before proposing, Opus calls <code>verify_numbers</code>. Sonnet checks independently; anything that fails is corrected or removed.</li>
+  <li>A proposal tool pauses the loop and shows an approval card. On <i>Approve</i>, the server inserts the rows into <code>ACME.BRAIN</code> using the same role.</li>
+  <li>Opus writes the final answer with <b>q</b> (SQL) and <b>doc</b> (note) citations. The whole run (steps, tokens, verdicts) is saved to <code>AGENT_TRACES</code>.</li>
+</ol>
+
+<h3>Where the safety comes from (defence in depth)</h3>
+<table class="card tablecard">
+  <tr><th>Layer</th><th>Mechanism</th></tr>
+  <tr><td>Data access</td><td>Snowflake roles + row access, masking and aggregation policies (enforced by the database, not the prompt)</td></tr>
+  <tr><td>Identity</td><td>One connection per persona, <code>USE SECONDARY ROLES NONE</code>, so no privileges leak in from other roles</td></tr>
+  <tr><td>Search</td><td>Document access policy on chunks + per-persona filtering of Cortex Search results</td></tr>
+  <tr><td>Correctness</td><td>Independent verifier model; citations to the exact SQL and note line</td></tr>
+  <tr><td>Behaviour</td><td>System prompt rules: team level only, no individual flight-risk scores, never decline sick or family leave, pay → Total Rewards</td></tr>
+  <tr><td>Action</td><td>Read-only SQL tool; writes only through approval cards; full audit trail in <code>AGENT_TRACES</code></td></tr>
+</table>
+
+<h3>How the data was built</h3>
+<ul>
+  <li>All SQL is in the repo: <code>snowflake/hr/10_…</code> to <code>17_…</code> (seed, performance, views, governance, Cortex extraction, time off, performance views).</li>
+  <li>Synthetic people generated with Snowflake <code>GENERATOR</code> and a seeded script (<code>scripts/build-hr-sql.mjs</code>); 2 story teams (Data Infra, Product Eng) designed to show the signals.</li>
+  <li>Performance shape from aggregate-only statistics of a real HR system (groups &lt; 5 suppressed); the profile file is git-ignored and never loaded into Snowflake.</li>
+</ul>
+
+<h3>Tech stack in one line</h3>
+<p>Snowflake (tables, views, semantic views, Cortex Search, Cortex <code>AI_COMPLETE</code>, governance policies) · Claude Opus 5.5 + Sonnet 5.5 via <code>@anthropic-ai/sdk</code> · Node 24 + TypeScript, no framework · single-file HTML UI · repo: github.com/rgarciasf/ingestion-snowflake</p>
+
+<!-- ======================================================= 3 -->
+<h2 id="s3">3. Words you may need to explain</h2>
+<table class="card tablecard">
+  <tr><th>Term</th><th>In one sentence</th></tr>
+  <tr><td>Semantic view</td><td>A Snowflake object that stores the official definitions of metrics (for example “headcount” or “after-hours per person per week”), so every query uses the same meaning.</td></tr>
+  <tr><td>Cortex Search</td><td>Snowflake's built-in search over text (here the HR notes and policies). It combines keyword and meaning-based search.</td></tr>
+  <tr><td>Cortex <code>AI_COMPLETE</code></td><td>Calling Claude from inside a Snowflake SQL query. We use it to turn notes into a structured table of promises.</td></tr>
+  <tr><td>Row access policy</td><td>A Snowflake rule that filters which rows a role can see (the manager sees only Data Infra).</td></tr>
+  <tr><td>Masking policy</td><td>A rule that hides a column's value for some roles (salary shows as empty for the manager).</td></tr>
+  <tr><td>Aggregation policy</td><td>A rule that only allows totals and averages over groups of at least 5 (anonymous surveys).</td></tr>
+  <tr><td>Knowledge graph</td><td>A map of who owns which service and which incident hit which customer. It answers “if Lena left, what breaks?”</td></tr>
+  <tr><td>Verifier</td><td>The second Claude that re-derives the numbers before anything is proposed.</td></tr>
+  <tr><td>Approval card / write-back</td><td>The human-in-the-loop step. Approved items are saved to <code>ACME.BRAIN</code> tables.</td></tr>
+  <tr><td>Agent trace</td><td>The step-by-step log of what the agent did, shown live and saved in Snowflake.</td></tr>
+  <tr><td>Synthetic data</td><td>Every person is fictional. The shape of the performance data (rating mix, completion rates) comes from aggregate-only statistics of a real HR system, groups under 5 suppressed, never published.</td></tr>
+  <tr><td>Persona</td><td>Who you are acting as. Each persona is a real Snowflake role, switched in the left sidebar.</td></tr>
+</table>
+
+<!-- ======================================================= 4 -->
+<h2 id="s4">4. The 3-minute pitch script</h2>
+<p class="sub">The organisers' rule: <b>open strong (≤ 30 s: who has the problem and why it matters), spend most of the time on a live demo, land the impact.</b> Then 2 minutes of Q&amp;A.</p>
+
+<div class="warn"><b>Timing trick:</b> a full agent run takes 1.5–2.5 minutes. Click the time-off question <b>right after the hook</b> and talk over it while it runs. It will finish during your architecture explanation. The salary question answers in about 5 seconds, so it's a safe live moment.</div>
+
+<div class="card">
+  <p><span class="time">0:00–0:30</span> <b>Hook</b></p>
+  <div class="do"><span class="tag do">Do</span>Start on the <b>Overview</b> as HR Business Partner. Point at the Data Infra card.</div>
+  <div class="say"><span class="tag say">Say</span>“HR usually finds out a team is burning out when someone resigns. The signals were there: pager alerts, after-hours work, time off not taken, a falling pulse score. So were the promises managers made in 1:1s, but nobody tracked them. At our demo company, Data Infra's engagement went from +15 to −85 in a month, two engineers quit, and four promises to that team are overdue.”</div>
+</div>
+
+<div class="card">
+  <p><span class="time">0:30–1:20</span> <b>Live demo part 1: the manager's time-off review (runs while you talk)</b></p>
+  <div class="do"><span class="tag do">Do</span>Click the persona <b>Data Infra Manager</b> → <b>Ask the agent</b> → the example “Review the pending time-off requests…”.</div>
+  <div class="say"><span class="tag say">Say</span>(while the trace runs) “I'm now the Data Infra manager. People Guard is reading Snowflake under my role: the requests, the on-call schedule, team coverage and the comp days we owe. Each step appears in this trace. Claude Opus is doing the investigation, and the cyan steps are a second Claude, Sonnet, re-checking every number before anything is proposed. Under the hood it's all Snowflake: semantic views for the definitions, Cortex Search over the 1:1 notes, and Claude inside Cortex already extracted every promise from those notes.”</div>
+</div>
+
+<div class="card">
+  <p><span class="time">1:20–1:50</span> <b>Governance moment</b> <span class="muted">(do this in a second browser tab if the time-off run is still going)</span></p>
+  <div class="do"><span class="tag do">Do</span>Second tab, same persona: type “What is Lena Okafor's salary, and what did she say in her 1:1?” and press Ask (about 5 s).</div>
+  <div class="say"><span class="tag say">Say</span>“Now watch what happens if I ask for something I shouldn't see. Refused, and not by a prompt: Snowflake itself masks salaries for this role and hides HR notes. The same question as the HR Business Partner would get an answer. That's row access, masking and aggregation policies doing the work.”</div>
+</div>
+
+<div class="card">
+  <p><span class="time">1:50–2:30</span> <b>Live demo part 2: the result and approval</b></p>
+  <div class="do"><span class="tag do">Do</span>Back to the first tab. Show the <b>decisions table</b> (approve with swap, and so on), click <b>Approve &amp; write</b>, then click one orange <b>q</b> chip to show the SQL.</div>
+  <div class="say"><span class="tag say">Say</span>“Nine requests reviewed. Four clashed with someone's own on-call week, so it proposes named swaps instead of declining, and it schedules the comp days we owe before they expire. Nothing is saved until I approve, and when I do, it's written back to Snowflake and logged. Every number links to the exact query that produced it.”</div>
+</div>
+
+<div class="card">
+  <p><span class="time">2:30–3:00</span> <b>Impact and what's next</b></p>
+  <div class="say"><span class="tag say">Say</span>“Instead of finding out at the exit interview, HR gets a verified answer in a couple of minutes, with owners and dates, written back to Snowflake. The same agent also prepares performance calibration at team level, never rating individuals. It runs inside the company's own Snowflake under their existing roles, so it's deployable on day one. Next: connect the HRIS and send every HRBP a weekly digest. Snowflake governs, Claude reasons and verifies, people decide.”</div>
+</div>
+
+<!-- ======================================================= 5 -->
+<h2 id="s5">5. Coverage map: what the organisers asked for</h2>
+
+<h3>The problem statement (from the slides)</h3>
+<table class="card tablecard">
+  <tr><th>They asked for</th><th>How People Guard covers it</th><th>Where you show it</th></tr>
+  <tr><td>Use Claude models and Snowflake surfaces</td><td>Claude Opus 5.5 and Sonnet 5.5 via the API; Claude inside Snowflake via Cortex <code>AI_COMPLETE</code>; Snowflake tables, views, semantic views, Cortex Search and policies.</td><td>Trace steps; the architecture sentence in the demo</td></tr>
+  <tr><td>Drives a business forward, <b>measurably</b></td><td>Concrete counts: 7 overdue promises found, 9 time-off requests decided, 4 on-call clashes solved, 23 comp days scheduled. Every plan has an owner and a due date.</td><td>Answer and approval card</td></tr>
+  <tr><td>For a <b>specific user</b></td><td>The HR Business Partner, plus the people manager for time off.</td><td>Persona cards in the sidebar</td></tr>
+  <tr><td>Well beyond a single prompt</td><td>Multi-step agent: 10–20 tool calls, two models, a verification loop, write-back with approval, and pre-extracted promises.</td><td>Trace length (“16 steps”)</td></tr>
+  <tr><td>Snowflake = governed source of truth; Claude = intelligence</td><td>All data and rules in Snowflake; Claude only reasons over what the role can see.</td><td>Governance moment</td></tr>
+  <tr><td>Track 01 Internal: question to decision faster; fewer handoffs</td><td>HR question to an approved, owned plan in about 2 minutes, with no data analyst in between.</td><td>Impact close</td></tr>
+  <tr><td>Data: synthetic / approved; core data in Snowflake; <b>make governance visible</b></td><td>All people fictional; HR shape from aggregate-only stats; 5 Snowflake policies visible in the demo.</td><td>Manager refused salary and 1:1</td></tr>
+  <tr><td>No PII, sensitive data or proprietary knowledge</td><td>No real person; the real-system profile is aggregates only, groups under 5 suppressed, not in Snowflake, not published.</td><td>Q&amp;A</td></tr>
+</table>
+
+<h3>Judging criteria (100 points)</h3>
+<table class="card tablecard">
+  <tr><th>Criterion</th><th>What judges look for</th><th>Your evidence</th></tr>
+  <tr><td><b>Impact (35)</b></td><td>Long-term potential; fits the problem; useful, and for whom</td><td>Regretted attrition and burnout are costly. HRBPs and managers get early, owned actions. It runs in the customer's Snowflake under existing roles, so it's deployable.</td></tr>
+  <tr><td><b>Demo (30)</b></td><td>How well it's implemented; does it work?</td><td>A live run with real Claude and Snowflake, approval, citations and a governance refusal. The 1-minute video is the backup.</td></tr>
+  <tr><td><b>Creativity (25)</b></td><td>Innovative, non-obvious approach</td><td>Turning <i>promises in notes</i> into tracked data; a second model verifying the first; time off solved with on-call swaps instead of declines; the knowledge graph (“if Lena left…”).</td></tr>
+  <tr><td><b>Craft with Snowflake &amp; Claude (10)</b></td><td>Depth of using both tools; beyond one prompt</td><td>Semantic views, Cortex Search, Cortex <code>AI_COMPLETE</code>, row access, masking and aggregation policies, recursive-CTE graph; Claude Opus and Sonnet tool use with an independent verifier.</td></tr>
+</table>
+
+<h3>Themes from the kickoff talk (Snowflake + Anthropic)</h3>
+<table class="card tablecard">
+  <tr><th>Theme they stressed</th><th>Our answer</th></tr>
+  <tr><td><b>Autonomy unlocks value</b>: agents own the job end to end</td><td>The agent owns the whole review: investigate, verify, propose, write back. The human only approves.</td></tr>
+  <tr><td><b>Context × intelligence multiply</b>: Snowflake context makes Claude sharper</td><td>Semantic views (definitions), health views (signals), Cortex Search (notes), extracted promises and the knowledge graph give Claude the context. Without the promises it would only see numbers, not the <i>why</i>.</td></tr>
+  <tr><td><b>Trust is the shared foundation</b>: model safety + governed data</td><td>Snowflake policies per role, independent verification, citations, approval before writes, audit log, and pay steps routed to Total Rewards.</td></tr>
+  <tr><td><b>Where intelligence pays off</b>: many steps and systems, high cost of being wrong, humans review everything today, decision authority about to be delegated</td><td>HR is all four: many systems, very high cost of errors (people and pay), heavy manual review today. We delegate the analysis, not the decision.</td></tr>
+  <tr><td><b>Five dimensions</b>: Surface, Context, Toolkit, Intelligence, Action (+ observability, evals, identity, governance)</td><td><b>Surface:</b> web app with personas. <b>Context:</b> semantic views, Cortex Search, graph. <b>Toolkit:</b> 7 agent tools. <b>Intelligence:</b> Opus 5.5 + Sonnet 5.5 + Claude in Cortex. <b>Action:</b> governed write-back after approval. <b>Cross-cutting:</b> trace log (observability), verifier (runtime eval), Snowflake roles (identity), policies (governance).</td></tr>
+  <tr><td><b>Match the model to the task</b>; effort = thinking budget</td><td>Opus 5.5 at high effort for open-ended investigation; Sonnet 5.5 at medium effort for bounded verification; Claude Sonnet in Cortex for bounded extraction. A cheaper model per bounded job.</td></tr>
+  <tr><td><b>“Same agent, different model”</b>: a weaker model gives confident wrong answers</td><td>That's why we added a verifier: in testing it rejected 2 of 14 numbers before HR saw them.</td></tr>
+  <tr><td><b>Evals are the truth serum</b></td><td>Today: a runtime verifier plus known-answer checks on the story teams. Next: a fixed eval set of HR questions with expected numbers, scored deterministically.</td></tr>
+  <tr><td><b>Trust by design</b>: governed by default, security flows through, observable, auditable</td><td>One identity and permission model (Snowflake roles) from query to agent action; every step traced; nothing written without approval.</td></tr>
+</table>
+
+<!-- ======================================================= 6 -->
+<h2 id="s6">6. Demo runbook and fallbacks</h2>
+<div class="grid2">
+  <div class="card"><b>Before you walk up (5 minutes earlier)</b>
+    <ul>
+      <li>The app runs at <code>http://localhost:3100</code>. If not: in the project folder run <code>PORT=3100 node --env-file=.env src/server.ts</code>.</li>
+      <li>Demo data is clean. If you already approved things, ask Claude to “reset the demo data” (otherwise the approval cards won't appear).</li>
+      <li>Open <b>two tabs</b>; both start on Overview as HR Business Partner.</li>
+      <li>Browser zoom 90–100%; close other tabs; turn on Do Not Disturb; laptop on power.</li>
+      <li>Have the video ready: <code>docs/people-guard-demo.mp4</code>.</li>
+    </ul></div>
+  <div class="card"><b>If something goes wrong</b>
+    <ul>
+      <li><b>A run is slow:</b> keep talking (use the architecture lines from section 2). Approval cards wait up to 5 minutes.</li>
+      <li><b>“Usage limit” error:</b> the Anthropic key hit its spend limit. Switch to the video and say so honestly.</li>
+      <li><b>No approval card</b> (“already decided”): the data wasn't reset. Show the answer and the Retention plans page instead.</li>
+      <li><b>Wi-Fi or Snowflake down:</b> play the video, then walk through the architecture page.</li>
+      <li><b>Red SQL error in the trace:</b> that's normal. The agent fixes its own query; say “it self-corrects”.</li>
+    </ul></div>
+</div>
+<div class="card"><b>Safe, fast moments you can always show live</b>
+  <ul>
+    <li><b>Overview page:</b> KPI cards and team risk cards (instant).</li>
+    <li><b>Teams page:</b> the table view, then switch persona to show that the manager sees 1 team and salary is hidden (about 5 s).</li>
+    <li><b>Salary question as the manager:</b> refused in about 5 s.</li>
+    <li><b>Retention plans page:</b> what has been approved and written.</li>
+  </ul></div>
+
+<!-- ======================================================= 7 -->
+<h2 id="s7">7. Q&amp;A: likely questions and short answers</h2>
+<details open><summary>Isn't this employee surveillance?</summary><p>No. It works at team level and makes no individual flight-risk scores. Surveys are anonymous and only readable in groups of 5+. Its signals are never used for performance or discipline. Its job is to make managers keep their promises and protect rest time.</p></details>
+<details><summary>How do you stop the AI from making up numbers?</summary><p>Every number comes from a SQL query against Snowflake, a second model re-derives it independently, and the UI links each number to the exact query and rows. In one run the verifier rejected 2 of 14 numbers before HR saw them.</p></details>
+<details><summary>Is any of this real data?</summary><p>No. Every person and note is fictional. To make the performance patterns realistic, we computed aggregate-only statistics from a real HR system (groups under 5 suppressed, no names, IDs or text) and generated synthetic people from that shape. The profile was never loaded into Snowflake or published.</p></details>
+<details><summary>Why Snowflake and Claude together, and not just a chatbot?</summary><p>Snowflake gives governed context: the same roles and policies the company already trusts, enforced at the data layer. Claude gives multi-step reasoning, verification and extraction, including inside Snowflake with Cortex <code>AI_COMPLETE</code>. A chatbot over a document dump has neither the governance nor the verified numbers.</p></details>
+<details><summary>What does the AI decide on its own?</summary><p>Nothing that changes data. It investigates and proposes; a human approves every write; pay-affecting steps go to Total Rewards and are never executed by the agent.</p></details>
+<details><summary>Why two different models?</summary><p>Matching model to task, as the kickoff talk recommended. Opus for open-ended investigation, Sonnet for the bounded verification job, and Claude in Cortex for extraction. The verifier being independent is the point: it checks the investigator.</p></details>
+<details><summary>How did you get the promises out of the notes?</summary><p>Claude inside Snowflake (Cortex <code>AI_COMPLETE</code> with a JSON schema) read each 1:1, retro and staffing note and extracted every promise with owner, recipient, category, due date and the exact quote. It then read the People Team follow-up notes to mark each one done, open or broken.</p></details>
+<details><summary>How long does it take, and what does it cost?</summary><p>One to two and a half minutes per full investigation, about 80K–190K tokens, so well under $1 with Claude Opus 5.5. Compare that with hours of HRBP and manager time per review.</p></details>
+<details><summary>How would a company deploy it?</summary><p>Inside their own Snowflake account: map personas to existing roles, point the views at their HRIS tables (Workday, Ascend), load meeting notes, done. No data leaves their governance boundary.</p></details>
+<details><summary>What about the manager seeing their team's reviews?</summary><p>Managers see only their own team (row access policy); survey data only in groups of 5+; HR notes are HR-only. Performance analysis is aggregated by team; the agent never ranks individuals.</p></details>
+<details><summary>What would you build next?</summary><p>An HRIS connector (aggregate-first, same policies), meeting-notes ingestion (Granola, Zoom, Teams), a weekly “teams at risk” digest per HRBP, and a formal eval set.</p></details>
+<details><summary>What was hardest?</summary><p>Making governance real. Our first test showed a manager seeing every salary, because the hackathon user had every role active at once. We now run each persona with secondary roles off, and we protected search chunks too. The aggregation policy even blocked our own view, so we pre-aggregate survey scores with the 5+ rule built in.</p></details>
+<details><summary>Did you build all of this today?</summary><p>Yes. The idea comes from our earlier project, Ingestion (a company-brain agent on ClickHouse), but all code, SQL and data in this repo were written today. There's also a Revenue version we built and put on hold to focus.</p></details>
+
+<!-- ======================================================= 8 -->
+<h2 id="s8">8. Numbers cheat sheet</h2>
+<table class="card tablecard">
+  <tr><th>Fact</th><th>Value</th></tr>
+  <tr><td>Company / people / teams</td><td>Acme (fictional) · 187 employees · 14 teams</td></tr>
+  <tr><td>Data Infra</td><td>eNPS +15 → −85 · after-hours +171% · 5.9 pages per person per week · 2 voluntary exits · 4 overdue promises, 1 broken · goals at 56%</td></tr>
+  <tr><td>Product Eng (mobile)</td><td>eNPS +50 → −71 · after-hours +140% · “no weekend work” promise broken</td></tr>
+  <tr><td>Overview KPIs</td><td>14 teams · 2 at high risk · 7 overdue promises · 4 exits (90 days)</td></tr>
+  <tr><td>Time-off run</td><td>9 requests · 4 on-call clashes · 2 named swaps · 23 comp days scheduled before Nov 17 · Lena's week off approved</td></tr>
+  <tr><td>Calibration</td><td>Company average rating 3.92 · 21% rated 5 · 94% completion · Finance 75% completion · Design 50% rated 5</td></tr>
+  <tr><td>Promises extracted by Claude in Cortex</td><td>16 promises to employees and teams</td></tr>
+  <tr><td>Snowflake policies</td><td>Team row access · salary masking · leave-type masking · survey aggregation (5+) · document access</td></tr>
+  <tr><td>Models</td><td>Claude Opus 5.5 (investigator) · Claude Sonnet 5.5 (verifier) · Claude Sonnet 4.5 in Cortex (extraction)</td></tr>
+  <tr><td>Repo / video</td><td>github.com/rgarciasf/ingestion-snowflake · docs/people-guard-demo.mp4</td></tr>
+</table>
+
+<!-- ======================================================= 9 -->
+<h2 id="s9">9. Be honest about</h2>
+<ul>
+  <li><b>Synthetic data.</b> The story teams were designed. Say “fictional company, realistic shape” and don't claim real-world results.</li>
+  <li><b>Speed.</b> Full runs take 1.5–2.5 minutes. They're agentic and verified, not instant chat.</li>
+  <li><b>Search filtering.</b> Cortex Search runs with the owner's rights, so search results are filtered per persona in the app; direct table reads are blocked by Snowflake policies.</li>
+  <li><b>No formal eval suite yet.</b> We have the runtime verifier and known-answer checks; a scored eval set is next.</li>
+  <li><b>Revenue version on hold.</b> It exists in the repo (renewals and AI token usage), but we focused the submission on HR.</li>
+</ul>
+
+<p class="muted" style="margin-top:40px">Ingestion · People Guard · Intelligence at Work hackathon, 2026-10-23. Architecture: <a href="architecture-hr.html" style="color:inherit">architecture-hr.html</a> · Submission text: <code>docs/submission.md</code></p>
+</div>
+</body>
+</html>
