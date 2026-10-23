@@ -14,7 +14,7 @@ updated: 2026-09-01
 
 ## Add-ons
 
-- **AI Insights**: $49/month on Growth; included in Enterprise. Not available on Free.
+- **AI features** (natural-language query, AI summaries, AI Insights): metered in tokens since September 1, 2026. See *AI Token Plans & Overage Policy*. Not available on Free.
 - **Extra data retention**: +12 months for $150/month (Growth).
 
 ## Discounts

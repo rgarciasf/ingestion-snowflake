@@ -344,3 +344,112 @@ UNION ALL SELECT 'feedback', COUNT(*) FROM FEEDBACK;
 `;
 writeFileSync(`${ROOT}snowflake/hr/11_hr_performance.sql`, perfSql);
 console.log(`Wrote snowflake/hr/11_hr_performance.sql: ${reviews.length} reviews, ${goals.length} goals, ${feedbackRows.length} feedback events`);
+
+// ======================================================================================================
+// Time off (snowflake/hr/15_hr_time_off.sql): requests for Nov-Dec 2026, on-call schedule, comp days owed.
+// Story: Data Infra deferred PTO during DI-4410 and now requests pile up around Thanksgiving; Lena Okafor's
+// promised week off falls on her on-call week; Product Eng comp days cluster after 4.3; Liam O'Neil's vacation
+// overlaps the Kestrel Bank renewal while Mei Chen is on sick leave.
+// ======================================================================================================
+const HOLIDAYS = new Set(["2026-11-26", "2026-11-27", "2026-12-24", "2026-12-25", "2026-12-28", "2026-12-29", "2026-12-30", "2026-12-31"]);
+const workingDays = (start, end) => {
+  let n = 0;
+  for (let d = start; d <= end; d = addDays(d, 1)) {
+    const wd = new Date(d + "T00:00:00Z").getUTCDay();
+    if (wd !== 0 && wd !== 6 && !HOLIDAYS.has(d)) n++;
+  }
+  return n;
+};
+const byName = (n) => employees.find((e) => e.name === n);
+const activeIn = (team) => employees.filter((e) => e.team === team && e.status === "active" && !/^M|VP/.test(e.level));
+
+// On-call: weekly primary/secondary rotation, Oct 26 - Dec 28. Data Infra's rotation is down to 5 people.
+const oncall = [];
+const WEEKS = Array.from({ length: 10 }, (_, i) => addDays("2026-10-26", i * 7));
+for (const t of TEAMS.filter((x) => x[7])) {
+  let pool = activeIn(t[1]);
+  if (t[1] === "Data Infra") pool = ["Chris Doyle", "Omar Haddad", "Lena Okafor"].map(byName).concat(pool.filter((e) => !["Lena Okafor", "Omar Haddad", "Chris Doyle"].includes(e.name)).slice(0, 2));
+  WEEKS.forEach((wk, i) => oncall.push([wk, t[1], pool[i % pool.length].id, pool[(i + 1) % pool.length].id]));
+}
+const onCallWeekOf = (empId, team) => oncall.filter((o) => o[1] === team && (o[2] === empId || o[3] === empId)).map((o) => o[0]);
+
+const requests = [];
+let reqId = 80001;
+const req = (e, type, start, end, status, requestedAt) => {
+  requests.push([reqId++, e.id, e.team, type, start, end, workingDays(start, end), status, requestedAt, Math.round((Date.parse(start) - Date.parse(requestedAt)) / 864e5)]);
+};
+const mondayOf = (i) => WEEKS[i];
+
+// Background: most people have 0-2 requests in Nov-Dec, mostly approved, with normal notice.
+for (const e of employees.filter((x) => x.status === "active" && !["Data Infra", "Product Eng", "Customer Success"].includes(x.team))) {
+  const n = rnd() < 0.35 ? 0 : rnd() < 0.7 ? 1 : 2;
+  for (let i = 0; i < n; i++) {
+    const start = addDays(mondayOf(1 + Math.floor(rnd() * 8)), Math.floor(rnd() * 3));
+    const end = addDays(start, between(0, 4));
+    req(e, rnd() < 0.92 ? "vacation" : "volunteer", start, end, rnd() < 0.75 ? "approved" : "pending", addDays(start, -between(15, 45)));
+  }
+}
+
+// Data Infra: PTO deferred during DI-4410 -> a pile-up of pending requests around Thanksgiving and early December.
+const di = activeIn("Data Infra");
+const lena = byName("Lena Okafor");
+const lenaOncall = onCallWeekOf(lena.id, "Data Infra")[0];
+req(lena, "vacation", lenaOncall, addDays(lenaOncall, 4), "pending", "2026-10-20");              // promised week off, on her on-call week
+di.filter((e) => e.id !== lena.id).forEach((e, i) => {
+  if (i % 3 === 2) return;                                                                        // a few haven't asked yet
+  const start = i % 2 ? "2026-11-23" : addDays("2026-11-30", (i % 4) * 2);
+  const end = i % 2 ? "2026-11-25" : addDays(start, between(3, 6));
+  const ownWeeks = onCallWeekOf(e.id, "Data Infra");
+  const clash = ownWeeks.find((w) => w <= end && addDays(w, 6) >= start);
+  req(e, "vacation", start, end, "pending", clash ? "2026-10-21" : addDays(start, -between(16, 30)));
+});
+
+// Product Eng: comp days for the weekend crunch, all requested for the week after 4.3 ships.
+activeIn("Product Eng").slice(0, 7).forEach((e) => req(e, "comp_day", "2026-11-09", addDays("2026-11-09", between(1, 3)), "pending", "2026-10-21"));
+activeIn("Product Eng").slice(7, 10).forEach((e) => req(e, "vacation", addDays("2026-12-14", between(0, 4)), "2026-12-23", "approved", "2026-10-01"));
+
+// Customer Success: Mei Chen on sick leave; Liam O'Neil (covering Kestrel Bank) asks for the renewal fortnight.
+req(byName("Mei Chen"), "sick", "2026-10-12", "2026-11-06", "approved", "2026-10-12");
+req(byName("Liam O'Neil"), "vacation", "2026-11-23", "2026-12-04", "pending", "2026-10-19");
+req(byName("Ava Brooks"), "vacation", "2026-12-21", "2026-12-23", "approved", "2026-09-30");
+req(byName("Diego Santos"), "parental", "2027-01-04", "2027-03-26", "approved", "2026-08-15");
+
+// Comp days owed under the On-call Compensation & Recovery Policy (to be taken within 30 days).
+const compOwed = [];
+di.forEach((e, i) => { if (i < 10) compOwed.push([e.id, e.team, "paged after midnight (DI-4410)", 1 + (i % 4), "2026-10-18", "2026-11-17"]); });
+activeIn("Product Eng").slice(0, 7).forEach((e, i) => compOwed.push([e.id, e.team, "weekend work (Android 4.3)", 2 + (i % 3) * 2, "2026-10-19", "2026-11-18"]));
+
+const toSql = `-- GENERATED by scripts/build-hr-sql.mjs. HR version: time off (requests, on-call schedule, comp days owed). Fictional.
+-- ${requests.length} time-off requests, ${oncall.length} on-call weeks, ${compOwed.length} comp-day balances.
+USE ROLE ACCOUNTADMIN;
+USE WAREHOUSE ACME_WH;
+USE SCHEMA ACME.PEOPLE;
+
+CREATE OR REPLACE TABLE TIME_OFF_REQUESTS (
+  REQUEST_ID NUMBER, EMPLOYEE_ID NUMBER, TEAM STRING,
+  LEAVE_TYPE STRING COMMENT 'vacation, comp_day, volunteer, sick, parental. sick/parental are shown as "leave" to non-HRBP roles (masking policy)',
+  START_DATE DATE, END_DATE DATE, WORKING_DAYS NUMBER COMMENT 'Weekdays excluding company holidays (Thanksgiving, Dec 24-25, Recharge Week Dec 28-31)',
+  STATUS STRING COMMENT 'pending, approved, declined', REQUESTED_AT DATE, NOTICE_DAYS NUMBER COMMENT 'Days between request and start. Policy: 14+ days for absences of 3+ days'
+) COMMENT = 'Time-off requests from the HR Portal, Oct 2026 - Mar 2027';
+INSERT INTO TIME_OFF_REQUESTS VALUES
+${requests.map((r) => `(${r.map(q).join(", ")})`).join(",\n")};
+
+CREATE OR REPLACE TABLE ONCALL_SCHEDULE (
+  WEEK_START DATE, TEAM STRING, PRIMARY_ID NUMBER, SECONDARY_ID NUMBER
+) COMMENT = 'Pager rotation (Monday start). Policy: on-call engineers must arrange a swap before taking PTO during their rotation';
+INSERT INTO ONCALL_SCHEDULE VALUES
+${oncall.map((r) => `(${r.map(q).join(", ")})`).join(",\n")};
+
+CREATE OR REPLACE TABLE COMP_DAYS_OWED (
+  EMPLOYEE_ID NUMBER, TEAM STRING, REASON STRING, DAYS_OWED NUMBER, EARNED_BY DATE, TAKE_BY DATE COMMENT 'Policy: comp days are taken within 30 days'
+) COMMENT = 'Recovery days owed under the On-call Compensation & Recovery Policy';
+INSERT INTO COMP_DAYS_OWED VALUES
+${compOwed.map((r) => `(${r.map(q).join(", ")})`).join(",\n")};
+
+SELECT 'requests' AS t, COUNT(*) AS n FROM TIME_OFF_REQUESTS
+UNION ALL SELECT 'pending', COUNT_IF(STATUS = 'pending') FROM TIME_OFF_REQUESTS
+UNION ALL SELECT 'oncall_weeks', COUNT(*) FROM ONCALL_SCHEDULE
+UNION ALL SELECT 'comp_owed_days', SUM(DAYS_OWED) FROM COMP_DAYS_OWED;
+`;
+writeFileSync(`${ROOT}snowflake/hr/15_hr_time_off.sql`, toSql);
+console.log(`Wrote snowflake/hr/15_hr_time_off.sql: ${requests.length} requests, ${oncall.length} on-call weeks, ${compOwed.length} comp-day rows`);

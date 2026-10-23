@@ -16,7 +16,7 @@ export type AgentEvent =
   | { type: "status"; text: string }
   | { type: "tool_start"; id: string; tool: string; input: unknown; agent: "main" | "verifier" }
   | { type: "tool_end"; id: string; tool: string; summary: string; ref?: string; error?: boolean; agent: "main" | "verifier" }
-  | { type: "approval"; approvalId: string; edition: EditionId; items: ProposedItem[] }
+  | { type: "approval"; approvalId: string; edition: EditionId; kind?: "time_off"; items: ProposedItem[] }
   | { type: "approval_result"; approvalId: string; approved: boolean; written: number }
   | { type: "answer"; text: string }
   | { type: "done"; traceId: string; refs: Record<string, Ref>; usage: { input: number; output: number }; ms: number }
@@ -163,6 +163,33 @@ function toolsFor(edition: EditionId): Anthropic.Tool[] {
       },
     },
     VERIFY,
+    ...(revenue ? [] : [{
+      name: "propose_time_off_decisions",
+      description: "Propose a decision for each pending time-off request (approve, approve_with_swap, decline, needs_hr) with the reason and any condition such as the on-call swap. Shows an approval card; on approval the decisions are written to ACME.BRAIN.TIME_OFF_DECISIONS.",
+      input_schema: {
+        type: "object",
+        properties: {
+          decisions: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                request_id: { type: "integer" },
+                employee_id: { type: "integer" },
+                employee: { type: "string" },
+                team: { type: "string" },
+                dates: { type: "string", description: "e.g. Nov 2-6 (5 days)" },
+                decision: { type: "string", enum: ["approve", "approve_with_swap", "decline", "needs_hr"] },
+                reason: { type: "string", description: "One sentence, citing the check that drove it" },
+                conditions: { type: "string", description: "e.g. 'Swap secondary on-call week of Nov 2 with Chris Doyle'; empty if none" },
+              },
+              required: ["request_id", "employee_id", "employee", "team", "dates", "decision", "reason", "conditions"],
+            },
+          },
+        },
+        required: ["decisions"],
+      },
+    } as Anthropic.Tool]),
     {
       name: "propose_actions",
       description: revenue
@@ -420,6 +447,34 @@ async function proposeActions(run: Run, items: ProposedItem[]) {
   return { summary: `approved · ${items.length} written`, text: `Approved by ${approver}. ${items.length} item(s) written to ${table}.` };
 }
 
+type TimeOffDecision = { request_id: number; employee_id: number; employee: string; team: string; dates: string; decision: string; reason: string; conditions: string };
+
+async function proposeTimeOff(run: Run, decisions: TimeOffDecision[]) {
+  const approvalId = randomUUID();
+  const decision = new Promise<{ approved: boolean; approver: string }>((resolve) =>
+    pendingApprovals.set(approvalId, (approved, approver) => resolve({ approved, approver })),
+  );
+  run.emit({ type: "approval", approvalId, edition: run.edition, kind: "time_off", items: decisions as any });
+  const timeout = new Promise<{ approved: boolean; approver: string }>((resolve) =>
+    setTimeout(() => resolve({ approved: false, approver: "timeout" }), 5 * 60_000),
+  );
+  const { approved, approver } = await Promise.race([decision, timeout]);
+  pendingApprovals.delete(approvalId);
+  if (!approved) {
+    run.emit({ type: "approval_result", approvalId, approved: false, written: 0 });
+    return { summary: "declined by user", text: "The user declined. Nothing was written. Do not propose again in this run." };
+  }
+  for (const d of decisions) {
+    await query(
+      run.role,
+      `INSERT INTO ACME.BRAIN.TIME_OFF_DECISIONS (REQUEST_ID, EMPLOYEE_ID, TEAM, DECISION, REASON, CONDITIONS, APPROVED_BY) SELECT ?, ?, ?, ?, ?, ?, ?`,
+      [d.request_id, d.employee_id, d.team, d.decision, d.reason, d.conditions || null, approver],
+    );
+  }
+  run.emit({ type: "approval_result", approvalId, approved: true, written: decisions.length });
+  return { summary: `approved · ${decisions.length} written`, text: `Approved by ${approver}. ${decisions.length} decision(s) written to ACME.BRAIN.TIME_OFF_DECISIONS.` };
+}
+
 async function executeTool(run: Run, name: string, input: any): Promise<{ text: string; summary: string; ref?: string }> {
   switch (name) {
     case "run_sql": return runSql(run, input.sql, input.purpose ?? "");
@@ -428,6 +483,7 @@ async function executeTool(run: Run, name: string, input: any): Promise<{ text: 
     case "explore_graph": return exploreGraph(run, input);
     case "verify_numbers": return verifyNumbers(run, input.claims ?? []);
     case "propose_actions": return proposeActions(run, input.items ?? []);
+    case "propose_time_off_decisions": return proposeTimeOff(run, input.decisions ?? []);
     default: throw new Error(`Unknown tool ${name}`);
   }
 }

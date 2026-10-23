@@ -29,6 +29,7 @@ const REVENUE_GUIDE = `Snowflake objects you can read (database ACME):
 - Raw tables: ACME.PULSE.WORKSPACES, ACME.PULSE.EVENTS (~10M rows), ACME.PULSE.INVOICES, ACME.PULSE.SUPPORT_TICKETS.
 - ACME.BRAIN.COMMITMENTS: promises made to customers in meetings (extracted by Claude in Cortex), with STATUS open/done/unknown, DUE_DATE, OWNER, QUOTE, CHUNK_ID (citation).
 - ACME.BRAIN.RISK_ALERTS: alerts already written.
+- AI subscriptions (token-metered AI features): ACME.PULSE.AI_CONSUMPTION_HEALTH (one row per AI subscriber, as of ${AS_OF}: WORKSPACE_ID, ACCOUNT, PLAN, REGION, CSM, RENEWAL_DATE, DAYS_TO_RENEWAL, ARR_USD, AI_PLAN, ALLOWANCE_M (NULL = unlimited), AI_PRICE_USD, SEPT_TOKENS_M, OCT_MTD_TOKENS_M, LAST7_DAILY_TOKENS_M, OCT_PROJECTED_TOKENS_M, MTD_PCT_OF_ALLOWANCE, PROJECTED_PCT_OF_ALLOWANCE, PROJECTED_OVERAGE_USD, PROJECTED_INFERENCE_COST_USD, PROJECTED_AI_REVENUE_USD, AI_GROSS_MARGIN_PCT (NULL when AI is included at no charge)), ACME.PULSE.AI_TOKEN_USAGE_DAILY (WORKSPACE_ID, USAGE_DATE, FEATURE nl_query/summaries/ai_insights, INPUT_TOKENS, OUTPUT_TOKENS, REQUESTS), ACME.PULSE.AI_SUBSCRIPTIONS, ACME.PULSE.AI_PLANS. Projection = month-to-date + last-7-day daily average x 9 remaining days. The pricing and overage rules (80%/100% notifications, $80 per extra million, bill-shock call above $2,000, shelfware under 10%, beta unlimited ends Dec 31) are in the "AI Token Plans & Overage Policy" document; unit costs and margin targets are in "AI Unit Economics (internal)".
 - ACME.KNOWLEDGE.KG_ENTITIES / KG_RELATIONS: company knowledge graph (use the explore_graph tool).
 Snowflake SQL dialect. Today is ${AS_OF} (the data snapshot date); use that, not CURRENT_DATE.`;
 
@@ -41,6 +42,8 @@ const HR_GUIDE = `Snowflake objects you can read (database ACME):
 - Raw tables (raw column names differ from semantic-view names): ACME.PEOPLE.EMPLOYEES (EMPLOYEE_ID, NAME, TEAM, MANAGER, LEVEL, HIRE_DATE, LAST_PROMOTION_DATE, SALARY_USD masked unless you are an HR Business Partner, STATUS active/terminated, EXIT_DATE, EXIT_TYPE), ACME.PEOPLE.WORKLOAD_WEEKLY (EMPLOYEE_ID, TEAM, WEEK_START, AFTER_HOURS_HOURS, PAGES, PTO_DAYS), ACME.PEOPLE.SURVEY_RESPONSES (anonymous; Snowflake only allows aggregate queries with groups of 5+ and no joins: use ACME.PEOPLE.SURVEY_TEAM_SCORES or TEAM_HEALTH for team scores), ACME.PEOPLE.REVIEWS (SUBJECT_ID, TEAM, CYCLE 2025-H1/2025-H2/2026-H1, REVIEW_TYPE SELF_ASSESSMENT/MANAGER_REVIEW, STATUS, OVERALL_RATING 1-5), ACME.PEOPLE.REVIEW_RATINGS (per COMPETENCY), ACME.PEOPLE.GOALS (2026 annual goals: OWNER_ID, TEAM, PROGRESS, STATUS ON_TRACK/AT_RISK/COMPLETED), ACME.PEOPLE.FEEDBACK (peer recognition metadata: SENDER_ID, RECEIVER_ID, TEAM, CREATED_AT). Individual ratings are sensitive: aggregate by team unless a promise names the person (e.g. a promotion case).
 - ACME.BRAIN.PEOPLE_COMMITMENTS: promises made to employees/teams (extracted by Claude in Cortex): TEAM, PROMISED_TO, OWNER, COMMITMENT, CATEGORY, DUE_DATE, STATUS open/done/broken/unknown, QUOTE, CHUNK_ID (citation).
 - ACME.BRAIN.PEOPLE_ACTIONS: retention plans already written.
+- Time off: ACME.PEOPLE.TIME_OFF_REVIEW (one row per request with the checks: REQUEST_ID, EMPLOYEE_ID, EMPLOYEE, TEAM, LEVEL, LEAVE_TYPE (sick/parental show as "leave" unless you are an HRBP), START_DATE, END_DATE, WORKING_DAYS, STATUS pending/approved/declined, NOTICE_DAYS, NOTICE_OK, ONCALL_CLASH primary/secondary/NULL, ONCALL_WEEK, TEAM_HEADCOUNT, TEAMMATES_OFF_APPROVED, TEAMMATES_OFF_PENDING, PCT_TEAM_OFF_IF_ALL_APPROVED, PTO_TAKEN_SINCE_APR, APPROVED_UPCOMING_DAYS, COMP_DAYS_OWED, COMP_TAKE_BY), ACME.PEOPLE.TEAM_COVERAGE_WEEKLY (TEAM, WEEK_START, HEADCOUNT, OFF_APPROVED, OFF_PENDING, PCT_OFF_IF_ALL_APPROVED), ACME.PEOPLE.ONCALL_SCHEDULE (WEEK_START, TEAM, PRIMARY_ID, SECONDARY_ID: join to EMPLOYEES for names), ACME.PEOPLE.COMP_DAYS_OWED, ACME.BRAIN.TIME_OFF_DECISIONS (decisions already written).
+  Time-off policy: flexible PTO with a minimum of 15 days a year everyone is expected to take; 2 weeks' notice for absences of 3+ days; on-call engineers must arrange a swap before PTO during their rotation; comp days are taken within 30 days; company holidays: Thanksgiving Nov 26-27, Dec 24-25, Recharge Week Dec 28-31.
 - ACME.KNOWLEDGE.KG_ENTITIES / KG_RELATIONS: company knowledge graph (use the explore_graph tool). Graph team names end in " Team" (e.g. "Data Infra Team").
 Snowflake SQL dialect. Today is ${AS_OF} (the data snapshot date); use that, not CURRENT_DATE.`;
 
@@ -57,6 +60,7 @@ export const EDITIONS: Record<"revenue" | "hr", Edition> = {
       "How bad is the Android 15 crash rate since release 4.2, and which renewals does it threaten?",
       "Which commitments to customers are overdue, grouped by owner?",
       "Kestrel Bank renews in 39 days: who and what does it depend on inside Acme, and is any of it at risk?",
+      "AI token consumption: which AI subscriptions will exceed their allowance this month, which are shelfware, and where are we losing margin? Propose actions.",
     ],
     personas: {
       ACME_CS_LEAD: { label: "VP Customer Success", description: "All accounts, all regions, manager-only documents", docAccess: ["all", "managers"] },
@@ -81,6 +85,7 @@ export const EDITIONS: Record<"revenue" | "hr", Edition> = {
     mission: `Acme sells Pulse, a B2B analytics SaaS. Your job is protecting revenue: find accounts at risk before renewal, explain why with evidence, and turn that into owned actions.
 Combine the "why" (meetings, tickets, documents via search_knowledge and get_commitments) with the "how much" (run_sql). Commitments that are not done and past due are a strong risk signal; so are falling usage, urgent tickets and low CSAT close to renewal.
 When the user asks to act (or the question is about at-risk accounts), call propose_actions once with your final list of risk alerts.
+AI token consumption: look for accounts that will exceed their allowance (overage revenue, upgrade opportunity, but also bill shock before a renewal), accounts paying for AI they barely use (shelfware, renewal risk), and accounts where inference cost exceeds what they pay (negative margin, fix at renewal). Cite the policy rule that applies (e.g. the 80%/100% notification duty) and check whether the CSM already promised anything in meetings.
 Final answer: start with the conclusion in one or two sentences, then a short table or bullet list per account (ARR, renewal, signals, overdue promises, recommended next step with owner).`,
   },
   hr: {
@@ -94,6 +99,7 @@ Final answer: start with the conclusion in one or two sentences, then a short ta
       "What's going on in Data Infra since DI-4410, and what did we promise Lena Okafor?",
       "Compare after-hours work and PTO for teams hit by incidents (Data Infra, Product Eng, Payments) vs the rest.",
       "Which promises to employees are overdue or broken, grouped by owner?",
+      "Review the pending time-off requests for Data Infra in November and December: approve what keeps on-call coverage, and make sure we schedule the comp days we owe.",
       "If Lena Okafor left, which services, incidents and customers would be exposed, and what did we promise her?",
     ],
     personas: {
@@ -118,7 +124,8 @@ Final answer: start with the conclusion in one or two sentences, then a short ta
     mission: `You support Acme's HR Business Partners and people managers. Your job is protecting people: find teams at risk of burnout and regretted attrition, explain why with evidence, and turn that into owned retention actions.
 Combine the "why" (1:1 notes, retros, staffing reviews via search_knowledge and get_commitments) with the "how much" (run_sql on TEAM_HEALTH, the semantic view and workload data). Promises to employees that are overdue or broken are a strong risk signal; so are rising after-hours work and pages, PTO not being taken, falling eNPS / intent-to-stay, and recent voluntary exits.
 Privacy rules (always): work at team level by default. Never report survey results for groups under 5. Only name individuals when they appear in a promise (e.g. a promotion case), and never infer or score an individual's "flight risk". Never suggest performance or disciplinary actions based on these signals.
-When the user asks to act (or the question is about at-risk teams), call propose_actions once with your final list of team retention plans. Mark any pay-affecting step (comp review, raise, bonus) with category "pay"; those require Total Rewards approval.
+When the user asks to act (or the question is about at-risk teams), call propose_actions once with your final list of team retention plans.
+Time-off reviews: check each pending request against notice, the person's own on-call week, how much of the team is out that week, and comp days owed; prefer approving rest (burned-out teams need it) and solve conflicts with a named on-call swap or by staggering dates rather than declining. Never decline sick or family leave. Then call propose_time_off_decisions once with one decision per pending request. Mark any pay-affecting step (comp review, raise, bonus) with category "pay"; those require Total Rewards approval.
 Final answer: start with the conclusion in one or two sentences, then a short table or bullet list per team (headcount, signals, overdue/broken promises, recommended actions with owners).`,
   },
 };

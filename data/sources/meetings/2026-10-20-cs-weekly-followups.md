@@ -11,7 +11,7 @@ updated: 2026-10-20
 ## Follow-up status reported by owners
 
 - Fern Media: Liam sent the Enterprise API limits doc on October 13. Done.
-- Lumio Learning: Ava confirmed the AI Insights waitlist on October 15. Done. Carlos's seat quote is still in pricing review.
+- Lumio Learning: Ava sent the AI plan options on October 15. Done. Lumio has not picked a plan yet. Carlos's seat quote is still in pricing review.
 - Harbor Fintech: Ben sent the SSO configuration review on October 11. Done.
 - Atlas Retail: Tom's import dry-run report went out on October 2. The migration workshop is not scheduled yet; Grace's team has not replied to two emails.
 - Nord Games: Ben sent the mobile web workaround on October 3. Android 4.3 slipped; mobile team now says early November.

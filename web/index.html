@@ -589,6 +589,7 @@ function stepInput(tool, input) {
   if (tool === "explore_graph") return `<pre>${esc(input.entity)} · ${input.hops ?? 2} hops</pre>`;
   if (tool === "get_commitments") return `<pre>${esc(JSON.stringify(input))}</pre>`;
   if (tool === "propose_actions") return `<pre>${esc((input.items || []).map((a) => a.account || a.team).join(", "))}</pre>`;
+  if (tool === "propose_time_off_decisions") return `<pre>${esc((input.decisions || []).map((d) => `${d.employee}: ${d.decision}`).join("\n"))}</pre>`;
   return "";
 }
 function linkCitations(html) {
@@ -636,7 +637,7 @@ async function ask() {
       const d = document.createElement("div"); d.className = `step ${e.agent}`; d.id = "s-" + e.id;
       d.innerHTML = `<span class="dot"></span><div class="top"><span class="who">${e.agent === "verifier" ? "Sonnet verifier" : "Opus"}</span><span class="tool">${esc(e.tool)}</span><span class="sum"><div class="spinner"></div></span></div>${stepInput(e.tool, e.input)}`;
       $("steps").appendChild(d);
-      if ($("statusText")) $("statusText").textContent = e.tool === "verify_numbers" ? "Verifying numbers…" : e.tool === "propose_actions" ? "Waiting for your approval…" : "Investigating…";
+      if ($("statusText")) $("statusText").textContent = e.tool === "verify_numbers" ? "Verifying numbers…" : (e.tool === "propose_actions" || e.tool === "propose_time_off_decisions") ? "Waiting for your approval…" : "Investigating…";
     }
     if (e.type === "tool_end") {
       const d = $("s-" + e.id); if (!d) return;
@@ -647,7 +648,7 @@ async function ask() {
     if (e.type === "approval_result") {
       const card = $("ap-" + e.approvalId);
       if (card) card.querySelector(".actions").innerHTML = e.approved
-        ? `<span class="badge ok" style="font-size:12.5px;padding:5px 12px">✓ Approved · ${e.written} written to ${askEdition === "hr" ? "ACME.BRAIN.PEOPLE_ACTIONS" : "ACME.BRAIN.RISK_ALERTS"}</span>`
+        ? `<span class="badge ok" style="font-size:12.5px;padding:5px 12px">✓ Approved · ${e.written} written to ${card.querySelector(".grid") ? "ACME.BRAIN.TIME_OFF_DECISIONS" : askEdition === "hr" ? "ACME.BRAIN.PEOPLE_ACTIONS" : "ACME.BRAIN.RISK_ALERTS"}</span>`
         : `<span class="badge neutral" style="font-size:12.5px;padding:5px 12px">Declined · nothing written</span>`;
       if (e.approved) { delete cache[`${askEdition}|${askRole}|actions`]; updateActionsCount(); }
     }
@@ -665,7 +666,9 @@ async function ask() {
   }
 }
 
+const DECISION_LABEL = { approve: ["Approve", "ok"], approve_with_swap: ["Approve with swap", "medium"], decline: ["Decline", "high"], needs_hr: ["Needs HR", "neutral"] };
 function renderApproval(e, approver) {
+  if (e.kind === "time_off") return renderTimeOffApproval(e, approver);
   const hr = e.edition === "hr";
   const d = document.createElement("div"); d.className = "approval"; d.id = "ap-" + e.approvalId;
   d.innerHTML = `<div class="head">${icon("shield", 18)}<h3>Approve writing ${e.items.length} ${hr ? "retention plan(s)" : "risk alert(s)"} to Snowflake?</h3></div>
@@ -674,6 +677,24 @@ function renderApproval(e, approver) {
       ${hr ? "" : `<span style="color:var(--muted);font-size:12.5px">${money(a.arr_usd)} ARR · renews ${esc(a.renewal_date)}</span>`}</div>
       <div style="margin:8px 0 0;color:var(--text-2)">${esc(a.summary)}</div>
       <ul>${a.actions.map((x) => `<li><b>${esc(x.owner)}</b>: ${esc(x.action)} <span style="color:var(--muted)">(by ${esc(x.due_date)})</span>${x.category === "pay" ? ` <span class="badge medium">needs Total Rewards</span>` : ""}</li>`).join("")}</ul></div>`).join("")}</div>
+    <div class="actions"><button class="btn">${icon("check", 15)}Approve &amp; write</button><button class="btn ghost">Decline</button></div>`;
+  const [ok, no] = d.querySelectorAll(".actions .btn");
+  const send = (approved) => fetch("/api/approve", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ approvalId: e.approvalId, approved, approver }) });
+  ok.onclick = () => send(true); no.onclick = () => send(false);
+  $("approvals").appendChild(d);
+}
+
+function renderTimeOffApproval(e, approver) {
+  const d = document.createElement("div"); d.className = "approval"; d.id = "ap-" + e.approvalId;
+  const counts = e.items.reduce((m, x) => ((m[x.decision] = (m[x.decision] || 0) + 1), m), {});
+  d.innerHTML = `<div class="head">${icon("clock", 18)}<h3>Approve ${e.items.length} time-off decision(s)?</h3>
+      <span style="margin-left:auto;display:flex;gap:6px">${Object.entries(counts).map(([k, n]) => `<span class="badge ${DECISION_LABEL[k]?.[1] || "neutral"}">${n} ${esc(DECISION_LABEL[k]?.[0] || k)}</span>`).join("")}</span></div>
+    <div class="card" style="margin:12px 18px;box-shadow:none;overflow:auto"><table class="grid" style="white-space:normal">
+      <thead><tr><th>Employee</th><th>Dates</th><th>Decision</th><th>Why</th><th>Condition</th></tr></thead>
+      <tbody>${e.items.map((x) => `<tr><td style="white-space:nowrap"><b>${esc(x.employee)}</b><div style="color:var(--muted);font-size:11.5px">${esc(x.team)} · #${esc(x.request_id)}</div></td>
+        <td style="white-space:nowrap">${esc(x.dates)}</td>
+        <td><span class="badge ${DECISION_LABEL[x.decision]?.[1] || "neutral"}">${esc(DECISION_LABEL[x.decision]?.[0] || x.decision)}</span></td>
+        <td style="white-space:normal;min-width:220px">${esc(x.reason)}</td><td style="white-space:normal;min-width:160px;color:var(--text-2)">${esc(x.conditions || "–")}</td></tr>`).join("")}</tbody></table></div>
     <div class="actions"><button class="btn">${icon("check", 15)}Approve &amp; write</button><button class="btn ghost">Decline</button></div>`;
   const [ok, no] = d.querySelectorAll(".actions .btn");
   const send = (approved) => fetch("/api/approve", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ approvalId: e.approvalId, approved, approver }) });
