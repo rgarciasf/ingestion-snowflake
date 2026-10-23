@@ -239,7 +239,7 @@
 <h2 id="s4">4. The 3-minute pitch script</h2>
 <p class="sub">The organisers' rule: <b>open strong (≤ 30 s: who has the problem and why it matters), spend most of the time on a live demo, land the impact.</b> Then 2 minutes of Q&amp;A.</p>
 
-<div class="warn"><b>Timing trick:</b> a full agent run takes 1.5–2.5 minutes. Click the time-off question <b>right after the hook</b> and talk over it while it runs. It will finish during your architecture explanation. The salary question answers in about 5 seconds, so it's a safe live moment.</div>
+<div class="warn"><b>Timing (measured in the recorded runs):</b> salary/1:1 question as the manager ≈ <b>5 s</b> · calibration ≈ <b>80 s</b> (no approval card) · teams at risk ≈ <b>2 min</b> (approval card appears after ≈ 1.5 min) · time off ≈ <b>3 min</b> (too slow for live; mention it only). So: click <b>teams at risk</b> right after the hook and talk over it; do the 5-second governance question in a second tab while it runs.</div>
 
 <div class="card">
   <p><span class="time">0:00–0:30</span> <b>Hook</b></p>
@@ -248,21 +248,21 @@
 </div>
 
 <div class="card">
-  <p><span class="time">0:30–1:20</span> <b>Live demo part 1: the manager's time-off review (runs while you talk)</b></p>
-  <div class="do"><span class="tag do">Do</span>Click the persona <b>Data Infra Manager</b> → <b>Ask the agent</b> → the example “Review the pending time-off requests…”.</div>
-  <div class="say"><span class="tag say">Say</span>(while the trace runs) “I'm now the Data Infra manager. SignalHR is reading Snowflake under my role: the requests, the on-call schedule, team coverage and the comp days we owe. Each step appears in this trace. Claude Opus is doing the investigation, and the cyan steps are a second Claude, Sonnet, re-checking every number before anything is proposed. Under the hood it's all Snowflake: semantic views for the definitions, Cortex Search over the 1:1 notes, and Claude inside Cortex already extracted every promise from those notes.”</div>
+  <p><span class="time">0:30–1:15</span> <b>Live demo part 1: teams at risk (runs while you talk)</b></p>
+  <div class="do"><span class="tag do">Do</span>Tab 1, as <b>HR Business Partner</b>: <b>Ask the agent</b> → the example “Which teams show burnout risk…”.</div>
+  <div class="say"><span class="tag say">Say</span>(while the trace runs) “SignalHR is reading Snowflake under my role: team health, pulse surveys, and the promises Claude extracted from our 1:1 and retro notes. Each step appears in this trace. Claude Opus is doing the investigation, and the cyan steps are a second Claude, Sonnet, re-checking every number before anything is proposed. Under the hood it's all Snowflake: semantic views for the definitions, Cortex Search over the notes, and Claude inside Cortex for the promise extraction.”</div>
 </div>
 
 <div class="card">
-  <p><span class="time">1:20–1:50</span> <b>Governance moment</b> <span class="muted">(do this in a second browser tab if the time-off run is still going)</span></p>
-  <div class="do"><span class="tag do">Do</span>Second tab, same persona: type “What is Lena Okafor's salary, and what did she say in her 1:1?” and press Ask (about 5 s).</div>
-  <div class="say"><span class="tag say">Say</span>“Now watch what happens if I ask for something I shouldn't see. Refused, and not by a prompt: Snowflake itself masks salaries for this role and hides HR notes. The same question as the HR Business Partner would get an answer. That's row access, masking and aggregation policies doing the work.”</div>
+  <p><span class="time">1:15–1:45</span> <b>Governance moment (second tab, ≈ 5 s)</b></p>
+  <div class="do"><span class="tag do">Do</span>Tab 2: switch persona to <b>Data Infra Manager</b>, type “What is Lena Okafor's salary, and what did she say in her 1:1?” and press Ask.</div>
+  <div class="say"><span class="tag say">Say</span>“Now I'm the Data Infra manager, asking for something I shouldn't see. Refused, and not by a prompt: Snowflake itself masks salaries for this role and hides HR notes. That's row access, masking and aggregation policies doing the work.”</div>
 </div>
 
 <div class="card">
-  <p><span class="time">1:50–2:30</span> <b>Live demo part 2: the result and approval</b></p>
-  <div class="do"><span class="tag do">Do</span>Back to the first tab. Show the <b>decisions table</b> (approve with swap, and so on), click <b>Approve &amp; write</b>, then click one orange <b>q</b> chip to show the SQL.</div>
-  <div class="say"><span class="tag say">Say</span>“Nine requests reviewed. Four clashed with someone's own on-call week, so it proposes named swaps instead of declining, and it schedules the comp days we owe before they expire. Nothing is saved until I approve, and when I do, it's written back to Snowflake and logged. Every number links to the exact query that produced it.”</div>
+  <p><span class="time">1:45–2:30</span> <b>Live demo part 2: the result and approval</b></p>
+  <div class="do"><span class="tag do">Do</span>Back to tab 1. When the <b>approval card</b> appears, read one plan, click <b>Approve</b>, then click one orange <b>q</b> chip to show the SQL. If the card isn't there yet, keep talking about time off (below) for 20 seconds.</div>
+  <div class="say"><span class="tag say">Say</span>“It flagged Data Infra and Product Eng, with the overdue promises behind each, and proposes retention plans with owners and dates. The pay step goes to Total Rewards; the agent never touches pay. Nothing is saved until I approve, and then it's written back to Snowflake and logged. Every number links to the exact query. The same agent handles time off for managers: it checks on-call coverage, proposes swaps instead of declines, and schedules the comp days we owe.”</div>
 </div>
 
 <div class="card">
@@ -374,7 +374,7 @@
 <h2 id="s9">9. Be honest about</h2>
 <ul>
   <li><b>Synthetic data.</b> The story teams were designed. Say “fictional company, realistic shape” and don't claim real-world results.</li>
-  <li><b>Speed.</b> Full runs take 1.5–2.5 minutes. They're agentic and verified, not instant chat.</li>
+  <li><b>Speed.</b> Full runs take 1.5–3 minutes (calibration ≈ 80 s, teams at risk ≈ 2 min, time off ≈ 3 min). They're agentic and verified, not instant chat.</li>
   <li><b>Search filtering.</b> Cortex Search runs with the owner's rights, so search results are filtered per persona in the app; direct table reads are blocked by Snowflake policies.</li>
   <li><b>No formal eval suite yet.</b> We have the runtime verifier and known-answer checks; a scored eval set is next.</li>
   <li><b>Revenue version on hold.</b> It exists in the repo (renewals and AI token usage), but we focused the submission on HR.</li>
