@@ -104,6 +104,7 @@
 <!-- ======================================================= 1 -->
 <h2 id="s1">1. The system in 30 seconds</h2>
 <div class="say"><b>Say:</b> “SignalHR is an HR agent built on Snowflake and Claude. It tells an HR Business Partner which teams are about to burn out or lose people, and which promises we made them that we haven't kept. It also approves time off without breaking on-call coverage, and prepares performance calibration. Every number is checked by a second model, nothing is saved until a human approves, and Snowflake decides who can see what.”</div>
+<p class="muted"><b>Why the name:</b> SignalHR turns the data HR already has (workload, surveys, time off, reviews, 1:1 notes) into early <i>signals</i> about teams. It is part of Ingestion, our company-brain product.</p>
 <p class="muted">If you remember only one line: <b>“Snowflake governs. Claude reasons and verifies. People decide.”</b></p>
 
 <!-- ======================================================= 2 -->
@@ -350,6 +351,7 @@
 <details><summary>What about the manager seeing their team's reviews?</summary><p>Managers see only their own team (row access policy); survey data only in groups of 5+; HR notes are HR-only. Performance analysis is aggregated by team; the agent never ranks individuals.</p></details>
 <details><summary>What would you build next?</summary><p>An HRIS connector (aggregate-first, same policies), meeting-notes ingestion (Granola, Zoom, Teams), a weekly “teams at risk” digest per HRBP, and a formal eval set.</p></details>
 <details><summary>What was hardest?</summary><p>Making governance real. Our first test showed a manager seeing every salary, because the hackathon user had every role active at once. We now run each persona with secondary roles off, and we protected search chunks too. The aggregation policy even blocked our own view, so we pre-aggregate survey scores with the 5+ rule built in.</p></details>
+<details><summary>Why is it called SignalHR? The video says “People Guard”.</summary><p>People Guard was our working title. We renamed it to SignalHR because the product is about early signals from people data, not policing people.</p></details>
 <details><summary>Did you build all of this today?</summary><p>Yes. The idea comes from our earlier project, Ingestion (a company-brain agent on ClickHouse), but all code, SQL and data in this repo were written today. There's also a Revenue version we built and put on hold to focus.</p></details>
 
 <!-- ======================================================= 8 -->
