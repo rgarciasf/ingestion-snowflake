@@ -115,7 +115,7 @@
 <header>
   <div class="eyebrow">Intelligence at Work Hackathon · Snowflake × Anthropic</div>
   <h1>Ingestion · People Guard<span class="badge">HR</span></h1>
-  <p class="lede">The HR version of the app. An HR Business Partner asks <i>“Which teams are at risk of losing people, and what did we promise them?”</i>. The agent connects promises made in 1:1s and retros with workload, time off, engagement and performance data in Snowflake. Claude investigates and verifies, and retention plans are written back only after the HRBP approves. Pay-affecting steps are routed to Total Rewards.</p>
+  <p class="lede">The HR version of the app, with two cases. <b>Teams at risk</b>: <i>“Which teams are at risk of losing people, and what did we promise them?”</i> <b>Time off</b>: <i>“Which pending requests can we approve without breaking on-call coverage, and which comp days do we owe?”</i> The agent connects promises made in 1:1s and retros with workload, time off, engagement and performance data in Snowflake. Claude investigates and verifies, and plans and decisions are written back only after a human approves. Pay-affecting steps are routed to Total Rewards.</p>
   <div class="pills">
     <span class="pill">User: HR Business Partner</span>
     <span class="pill">Team-level by default</span>
@@ -170,7 +170,7 @@
   <text x="257" y="160" class="s-text" font-size="12" font-weight="600">server.ts + editions.ts</text>
   <text x="257" y="178" class="s-mono" font-size="10">edition = "hr"</text>
 
-  <rect x="245" y="206" width="240" height="168" rx="8" class="s-app-strong"/>
+  <rect x="245" y="206" width="240" height="172" rx="8" class="s-app-strong"/>
   <text x="257" y="227" class="s-text" font-size="12.5" font-weight="600">Investigator agent · Opus 5.5</text>
   <text x="257" y="243" class="s-muted" font-size="11">HR prompt + privacy rules</text>
   <text x="257" y="266" class="s-mono" font-size="10.5">run_sql</text>
@@ -179,6 +179,7 @@
   <text x="257" y="314" class="s-mono" font-size="10.5">explore_graph</text>
   <text x="257" y="330" class="s-mono" font-size="10.5">verify_numbers</text>
   <text x="257" y="346" class="s-mono" font-size="10.5">propose_actions</text>
+  <text x="257" y="362" class="s-mono" font-size="10.5">propose_time_off_decisions</text>
   <text x="392" y="266" class="s-muted" font-size="10">read-only guard</text>
   <text x="392" y="282" class="s-muted" font-size="10">HR notes</text>
   <text x="392" y="298" class="s-muted" font-size="10">promises</text>
@@ -206,10 +207,10 @@
   <text x="557" y="144" class="s-mono" font-size="10">EMPLOYEES (187) · WORKLOAD_WEEKLY</text>
   <text x="557" y="159" class="s-mono" font-size="10">SURVEY_RESPONSES (anonymous)</text>
   <text x="557" y="174" class="s-mono" font-size="10">REVIEWS · REVIEW_RATINGS</text>
-  <text x="557" y="189" class="s-mono" font-size="10">GOALS · FEEDBACK</text>
-  <text x="557" y="213" class="s-text" font-size="11" font-weight="600">View TEAM_HEALTH</text>
-  <text x="690" y="213" class="s-muted" font-size="10.5">risk signals</text>
-  <text x="557" y="235" class="s-text" font-size="11" font-weight="600">Semantic view PEOPLE_ANALYTICS</text>
+  <text x="557" y="189" class="s-mono" font-size="10">GOALS · FEEDBACK · TIME_OFF_REQUESTS</text>
+  <text x="557" y="204" class="s-mono" font-size="10">ONCALL_SCHEDULE · COMP_DAYS_OWED</text>
+  <text x="557" y="224" class="s-text" font-size="11" font-weight="600">TEAM_HEALTH · TIME_OFF_REVIEW</text>
+  <text x="557" y="244" class="s-text" font-size="11" font-weight="600">Semantic view PEOPLE_ANALYTICS</text>
 
   <rect x="545" y="268" width="250" height="105" rx="8" class="s-sf-box"/>
   <text x="557" y="288" class="s-text" font-size="12.5" font-weight="600">ACME.KNOWLEDGE</text>
@@ -224,8 +225,10 @@
   <text x="557" y="443" class="s-muted" font-size="10.5">promises: open / done / broken</text>
   <text x="557" y="466" class="s-mono" font-size="10.5">PEOPLE_ACTIONS</text>
   <text x="667" y="466" class="s-muted" font-size="10.5">retention plans</text>
-  <text x="557" y="489" class="s-mono" font-size="10.5">AGENT_TRACES</text>
-  <text x="667" y="489" class="s-muted" font-size="10.5">audit trail</text>
+  <text x="557" y="489" class="s-mono" font-size="10.5">TIME_OFF_DECISIONS</text>
+  <text x="557" y="510" class="s-mono" font-size="10.5">AGENT_TRACES</text>
+  <text x="690" y="489" class="s-muted" font-size="10.5">approved</text>
+  <text x="667" y="510" class="s-muted" font-size="10.5">audit trail</text>
 
   <rect x="815" y="105" width="190" height="152" rx="8" class="s-card"/>
   <text x="827" y="125" class="s-text" font-size="12" font-weight="600">Compute</text>
@@ -246,7 +249,7 @@
   <rect x="815" y="440" width="190" height="80" rx="8" class="s-gov"/>
   <text x="827" y="460" class="s-text" font-size="12" font-weight="600">ACME.GOVERNANCE</text>
   <text x="827" y="478" class="s-mono" font-size="9.5">TEAM_POLICY (row access)</text>
-  <text x="827" y="493" class="s-mono" font-size="9.5">SALARY_MASK (masking)</text>
+  <text x="827" y="493" class="s-mono" font-size="9.5">SALARY + LEAVE_TYPE masks</text>
   <text x="827" y="508" class="s-mono" font-size="9.5">SURVEY_MIN_GROUP (≥ 5)</text>
 
   <!-- arrows: people <-> app -->
@@ -299,12 +302,12 @@
   <rect x="606" y="618" width="160" height="72" rx="8" class="s-app"/>
   <text x="618" y="639" class="s-text" font-size="11.5" font-weight="600">build-hr-sql.mjs</text>
   <text x="618" y="656" class="s-muted" font-size="10.5">fictional people + story</text>
-  <text x="618" y="671" class="s-muted" font-size="10.5">→ hr/10 + hr/11 .sql</text>
+  <text x="618" y="671" class="s-muted" font-size="10.5">→ hr/10, 11, 15 .sql</text>
 
   <rect x="796" y="618" width="160" height="72" rx="8" class="s-app"/>
   <text x="808" y="639" class="s-text" font-size="11.5" font-weight="600">run-sql.ts</text>
   <text x="808" y="656" class="s-muted" font-size="10.5">npm run setup:</text>
-  <text x="808" y="671" class="s-muted" font-size="10.5">hr/10 → hr/14</text>
+  <text x="808" y="671" class="s-muted" font-size="10.5">hr/10 → hr/16</text>
 
   <line x1="196" y1="654" x2="224" y2="654" class="s-line-red" marker-end="url(#m-red)"/>
   <line x1="386" y1="654" x2="414" y2="654" class="s-line" marker-end="url(#m-muted)"/>
@@ -339,6 +342,34 @@
   <li><div><b>Answer and audit</b><span class="muted">The cited answer is streamed to the UI and the whole run is saved to <code>ACME.BRAIN.AGENT_TRACES</code>.</span></div><span class="who app">Web app</span></li>
 </ol>
 
+<h2>Time-off case</h2>
+<p class="sub">Example (as the Data Infra Manager): <i>“Review the pending time-off requests for Data Infra in November and December: approve what keeps on-call coverage, and make sure we schedule the comp days we owe.”</i></p>
+<div class="grid3">
+  <div class="card"><div class="bar" style="background:var(--sf)"></div><div class="k" style="color:var(--sf)">Checks per request</div>
+    <ul>
+      <li>Notice: 14+ days for absences of 3+ days</li>
+      <li>Clash with the person's own primary or secondary on-call week</li>
+      <li>% of the team out if everything pending is approved</li>
+      <li>Comp days owed (take within 30 days); PTO minimum of 15 days</li>
+      <li>Holidays: Thanksgiving, Dec 24–25, Recharge Week</li>
+    </ul></div>
+  <div class="card"><div class="bar" style="background:var(--ai)"></div><div class="k" style="color:var(--ai)">What the agent does</div>
+    <ul>
+      <li>Prefers approving rest: the team is burned out</li>
+      <li>Solves clashes with named on-call swaps or staggered dates</li>
+      <li>Never declines sick or family leave</li>
+      <li>Proposes one decision per request, then the manager approves</li>
+    </ul></div>
+  <div class="card"><div class="bar" style="background:var(--warn)"></div><div class="k" style="color:var(--warn)">Test run result</div>
+    <ul>
+      <li>9 pending requests; 4 on-call clashes solved with 2 swaps</li>
+      <li>Lena Okafor's promised week off approved (one-day notice exception)</li>
+      <li>Casey Fontaine flagged under the 15-day minimum</li>
+      <li>All 23 owed comp days scheduled before Nov 17</li>
+      <li>6/6 figures verified; 9 decisions + 1 plan written</li>
+    </ul></div>
+</div>
+
 <h2>Who sees what</h2>
 <p class="sub">Enforced by Snowflake policies on the persona's role, not by the app. Try the same question as both personas.</p>
 <div class="card tablecard">
@@ -347,6 +378,8 @@
   <tbody>
     <tr><td>Employees, workload, reviews, goals, feedback</td><td class="yes">All 14 teams</td><td class="part">Data Infra only</td><td class="mono">TEAM_POLICY (row access)</td></tr>
     <tr><td>Salaries</td><td class="yes">Visible</td><td class="no">Masked (NULL)</td><td class="mono">SALARY_MASK (masking policy)</td></tr>
+    <tr><td>Leave type (sick, parental)</td><td class="yes">Visible</td><td class="part">Shown as “leave”</td><td class="mono">LEAVE_TYPE_MASK (masking policy)</td></tr>
+    <tr><td>Time-off requests, on-call schedule, comp days owed</td><td class="yes">All teams</td><td class="part">Data Infra only</td><td class="mono">TEAM_POLICY</td></tr>
     <tr><td>Pulse survey answers</td><td class="part">Aggregates, groups ≥ 5</td><td class="part">Aggregates, groups ≥ 5</td><td class="mono">SURVEY_MIN_GROUP (aggregation policy)</td></tr>
     <tr><td>HR notes (1:1s, retros, staffing reviews)</td><td class="yes">Visible</td><td class="no">Hidden</td><td class="mono">DOC_ACCESS_POLICY + search filter</td></tr>
     <tr><td>Promises to employees and retention plans</td><td class="yes">All teams</td><td class="part">Data Infra only</td><td class="mono">TEAM_POLICY</td></tr>
@@ -393,7 +426,7 @@
     <ul>
       <li><b>Opus 5.5</b>: investigator with HR privacy rules</li>
       <li><b>Sonnet 5.5</b>: independent verifier</li>
-      <li>Six tools, manual agent loop</li>
+      <li>Seven tools, manual agent loop</li>
       <li>Server-side refusal fallback</li>
       <li>Claude in Cortex extracts promises</li>
     </ul></div>
@@ -420,6 +453,9 @@
     <tr><td class="mono">KNOWLEDGE.DOC_CHUNKS</td><td>HR notes (<code>access = hr</code>) and policies, indexed by Cortex Search</td></tr>
     <tr><td class="mono">KNOWLEDGE.KG_*</td><td>Shared knowledge graph: 62 entities, 78 relations</td></tr>
     <tr><td class="mono">BRAIN.PEOPLE_COMMITMENTS</td><td>Promises extracted by Claude in Cortex: owner, promised to, category, due date, status (open, done, broken, unknown), quote, citation</td></tr>
+    <tr><td class="mono">PEOPLE.TIME_OFF_REQUESTS · ONCALL_SCHEDULE · COMP_DAYS_OWED</td><td>129 requests for Oct 2026 – Mar 2027 (vacation, comp day, volunteer, sick, parental), the Nov–Dec pager rotation, and recovery days owed under the on-call policy</td></tr>
+    <tr><td class="mono">PEOPLE.TIME_OFF_REVIEW · TEAM_COVERAGE_WEEKLY</td><td>Per request: notice OK, own on-call clash, % of team out if all approved, PTO taken, comp days owed. Per team and week: people off</td></tr>
+    <tr><td class="mono">BRAIN.TIME_OFF_DECISIONS</td><td>Approved decisions: approve, approve with swap, decline, or needs HR, with reason and condition</td></tr>
     <tr><td class="mono">BRAIN.PEOPLE_ACTIONS</td><td>Approved retention plans, with <code>REQUIRES_APPROVAL_FROM</code> = Total Rewards for pay steps</td></tr>
   </tbody>
 </table>

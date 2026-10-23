@@ -105,7 +105,7 @@
 <header>
   <div class="eyebrow">Intelligence at Work Hackathon · Snowflake × Anthropic</div>
   <h1>Ingestion · Revenue Guard: system architecture</h1>
-  <p class="lede">An agent for a VP of Customer Success that answers <i>“Which renewals are at risk, and what did we promise them?”</i>. It connects meeting commitments, support tickets and product usage in Snowflake, uses Claude to investigate and verify, and writes risk alerts back only after a human approves.</p>
+  <p class="lede">An agent for a VP of Customer Success with two cases. <b>Renewals at risk</b>: <i>“Which renewals are at risk, and what did we promise them?”</i> <b>AI token consumption</b>: <i>“Who will exceed their AI allowance, who pays for AI they don't use, and where are we losing margin?”</i> It connects meeting commitments, support tickets, product usage and AI token usage in Snowflake, uses Claude to investigate and verify, and writes risk alerts back only after a human approves.</p>
   <div class="pills">
     <span class="pill">Track: Internal</span>
     <span class="pill">Two versions: Revenue · HR</span>
@@ -165,7 +165,8 @@
   <text x="257" y="286" class="s-mono" font-size="10.5">search_knowledge</text>
   <text x="257" y="302" class="s-mono" font-size="10.5">get_commitments</text>
   <text x="257" y="318" class="s-mono" font-size="10.5">verify_numbers</text>
-  <text x="257" y="334" class="s-mono" font-size="10.5">propose_risk_alerts</text>
+  <text x="257" y="334" class="s-mono" font-size="10.5">propose_actions</text>
+  <text x="257" y="350" class="s-mono" font-size="10.5">explore_graph</text>
   <text x="392" y="270" class="s-muted" font-size="10">read-only SQL guard</text>
   <text x="392" y="286" class="s-muted" font-size="10">Cortex Search</text>
   <text x="392" y="318" class="s-muted" font-size="10">→ verifier</text>
@@ -188,16 +189,15 @@
 
   <rect x="545" y="105" width="250" height="135" rx="8" class="s-sf-box"/>
   <text x="557" y="125" class="s-text" font-size="12.5" font-weight="600">ACME.PULSE: product + revenue</text>
-  <text x="557" y="145" class="s-mono" font-size="10.5">WORKSPACES · EVENTS (~10M)</text>
-  <text x="557" y="161" class="s-mono" font-size="10.5">INVOICES · SUPPORT_TICKETS</text>
+  <text x="557" y="145" class="s-mono" font-size="10.5">WORKSPACES · EVENTS (~9.5M)</text>
+  <text x="557" y="161" class="s-mono" font-size="10">INVOICES · TICKETS · AI_TOKEN_USAGE</text>
   <text x="557" y="185" class="s-text" font-size="11" font-weight="600">Semantic view PULSE_ANALYTICS</text>
   <text x="557" y="200" class="s-muted" font-size="10.5">official metric definitions</text>
-  <text x="557" y="222" class="s-text" font-size="11" font-weight="600">View ACCOUNT_HEALTH</text>
-  <text x="705" y="222" class="s-muted" font-size="10.5">risk signals</text>
+  <text x="557" y="222" class="s-text" font-size="10" font-weight="600">ACCOUNT_HEALTH · AI_CONSUMPTION_HEALTH</text>
 
   <rect x="545" y="255" width="250" height="115" rx="8" class="s-sf-box"/>
   <text x="557" y="275" class="s-text" font-size="12.5" font-weight="600">ACME.KNOWLEDGE: documents</text>
-  <text x="557" y="295" class="s-mono" font-size="10.5">DOCUMENTS (33) · DOC_CHUNKS (153)</text>
+  <text x="557" y="295" class="s-mono" font-size="10.5">DOCUMENTS (42) · DOC_CHUNKS (181)</text>
   <text x="557" y="320" class="s-text" font-size="11" font-weight="600">Cortex Search KNOWLEDGE_SEARCH</text>
   <text x="557" y="336" class="s-muted" font-size="10.5">hybrid search over docs, tickets,</text>
   <text x="557" y="351" class="s-muted" font-size="10.5">meeting transcripts</text>
@@ -277,7 +277,7 @@
   <text x="253" y="638" class="s-muted" font-size="10.5">chunks by heading / time</text>
   <text x="253" y="653" class="s-muted" font-size="10.5">window → 03_knowledge.sql</text>
   <rect x="446" y="600" width="175" height="66" rx="8" class="s-app"/>
-  <text x="458" y="621" class="s-text" font-size="11.5" font-weight="600">snowflake/01–06.sql</text>
+  <text x="458" y="621" class="s-text" font-size="11.5" font-weight="600">snowflake/01–08.sql</text>
   <text x="458" y="638" class="s-muted" font-size="10.5">setup · seed · search ·</text>
   <text x="458" y="653" class="s-muted" font-size="10.5">governance · AI extraction</text>
   <rect x="651" y="600" width="175" height="66" rx="8" class="s-app"/>
@@ -308,7 +308,7 @@
   <li><div><b>Find the “how much”</b><span class="muted"><code>run_sql</code> queries <code>ACCOUNT_HEALTH</code> and the <code>PULSE_ANALYTICS</code> semantic view: ARR, days to renewal, usage change, urgent tickets, CSAT. A guard allows only one read-only statement; each result gets a citation id (<code>q1</code>, <code>q2</code>…).</span></div><span class="who sf">Snowflake</span></li>
   <li><div><b>Find the “why”</b><span class="muted"><code>get_commitments</code> lists overdue promises extracted earlier by Claude in Cortex. <code>search_knowledge</code> runs Cortex Search over transcripts and tickets. Results about accounts outside the role's region are withheld, based on what Snowflake lets that role see.</span></div><span class="who sf">Snowflake</span></li>
   <li><div><b>Verify</b><span class="muted"><code>verify_numbers</code> hands the key figures to a separate Claude Sonnet 5.5 agent. It writes its own SQL, re-derives each number and returns pass / fail. Failed numbers must be fixed before any alert is proposed.</span></div><span class="who ai">Claude</span></li>
-  <li><div><b>Propose and approve</b><span class="muted"><code>propose_risk_alerts</code> shows an approval card: risk level, ARR, renewal date, summary and owned next steps. The agent waits for a human to click Approve or Decline.</span></div><span class="who human">Human</span></li>
+  <li><div><b>Propose and approve</b><span class="muted"><code>propose_actions</code> shows an approval card: risk level, ARR, renewal date, summary and owned next steps. The agent waits for a human to click Approve or Decline.</span></div><span class="who human">Human</span></li>
   <li><div><b>Write back</b><span class="muted">On approval, alerts are inserted into <code>ACME.BRAIN.RISK_ALERTS</code> under the same role, with the approver recorded. Nothing is written on decline or after a 5-minute timeout.</span></div><span class="who sf">Snowflake</span></li>
   <li><div><b>Answer and audit</b><span class="muted">The cited answer is streamed to the UI, where orange chips open the SQL and rows and blue chips open the transcript. The full run (steps, tokens, latency) is saved to <code>ACME.BRAIN.AGENT_TRACES</code>.</span></div><span class="who app">Web app</span></li>
 </ol>
@@ -349,12 +349,39 @@
 <table>
   <thead><tr><th>Schema</th><th>Objects</th><th>Purpose</th></tr></thead>
   <tbody>
-    <tr><td><b>PULSE</b></td><td class="mono">WORKSPACES (6,000) · EVENTS (~10M) · INVOICES · SUPPORT_TICKETS (~28K) · PULSE_ANALYTICS (semantic view) · ACCOUNT_HEALTH (view)</td><td>Product usage, revenue and support. Built-in stories: Android 4.2 crashes, INC-2291 billing incident, DI-4410 EU delays, Reports v1 deprecation.</td></tr>
-    <tr><td><b>KNOWLEDGE</b></td><td class="mono">DOCUMENTS (33) · DOC_CHUNKS (153) · KNOWLEDGE_SEARCH (Cortex Search)</td><td>Policies, product docs, tickets and 13 meeting notes, chunked by heading or by transcript time window.</td></tr>
+    <tr><td><b>PULSE</b></td><td class="mono">WORKSPACES (6,000) · EVENTS (~9.5M) · INVOICES · SUPPORT_TICKETS (~28.5K) · PULSE_ANALYTICS (semantic view) · ACCOUNT_HEALTH (view) · AI_PLANS · AI_SUBSCRIPTIONS (724) · AI_TOKEN_USAGE_DAILY (52 days) · AI_CONSUMPTION_HEALTH (view)</td><td>Product usage, revenue and support. Built-in stories: Android 4.2 crashes, INC-2291 billing incident, DI-4410 EU delays, Reports v1 deprecation.</td></tr>
+    <tr><td><b>KNOWLEDGE</b></td><td class="mono">DOCUMENTS (42) · DOC_CHUNKS (181) · KNOWLEDGE_SEARCH (Cortex Search) · KG_ENTITIES (62) · KG_RELATIONS (78)</td><td>Policies, product docs, tickets and 13 meeting notes, chunked by heading or by transcript time window.</td></tr>
     <tr><td><b>BRAIN</b></td><td class="mono">COMMITMENTS · RISK_ALERTS · AGENT_TRACES</td><td>What Claude extracts and what the agent writes back, each with citations and an audit trail.</td></tr>
     <tr><td><b>GOVERNANCE</b></td><td class="mono">REGION_ENTITLEMENTS · WORKSPACE_REGION · ACCOUNT_REGION_POLICY · DOC_ACCESS_POLICY</td><td>Who may see which region's customers and which documents. Not granted to personas.</td></tr>
   </tbody>
 </table>
+</div>
+
+<h2>AI token consumption case</h2>
+<p class="sub">Pulse AI features (natural-language query, summaries, AI Insights) are metered in tokens. The agent reads <code>AI_CONSUMPTION_HEALTH</code> and the AI policies, and proposes alerts.</p>
+<div class="grid3">
+  <div class="card"><div class="bar" style="background:var(--sf)"></div><div class="k" style="color:var(--sf)">Data</div>
+    <ul>
+      <li><code>AI_PLANS</code>: Starter 5M, Pro 25M, Scale 100M, Beta unlimited</li>
+      <li><code>AI_SUBSCRIPTIONS</code> (724) and <code>AI_TOKEN_USAGE_DAILY</code> per feature</li>
+      <li><code>AI_CONSUMPTION_HEALTH</code>: MTD and projected tokens, % of allowance, overage, inference cost, gross margin</li>
+    </ul></div>
+  <div class="card"><div class="bar" style="background:var(--ai)"></div><div class="k" style="color:var(--ai)">Policy the agent cites</div>
+    <ul>
+      <li>Notify the customer at 80% and 100% of allowance</li>
+      <li>$80 per extra million tokens; a CSM call before any overage above $2,000</li>
+      <li>Shelfware: under 10% for 2 months</li>
+      <li>Margin target ≥ 70% (managers-only doc)</li>
+    </ul></div>
+  <div class="card"><div class="bar" style="background:var(--warn)"></div><div class="k" style="color:var(--warn)">Test run result</div>
+    <ul>
+      <li><b>Nord Bank 19</b>: $7,502 overage, 34 days before renewal</li>
+      <li><b>Lumio Learning</b>: 235% of allowance, upgrade path</li>
+      <li><b>Brightline Health</b>: 91%; the beta will push it over (found by the agent)</li>
+      <li><b>Kestrel Bank</b>: shelfware at 3%</li>
+      <li><b>Bright Health 23</b>: −192% margin</li>
+      <li>9/9 figures verified, 5 alerts written</li>
+    </ul></div>
 </div>
 
 <h2>Story accounts</h2>
@@ -369,8 +396,10 @@
     <tr><td><b>Harbor Fintech</b></td><td>us-east</td><td>2026-12-01</td><td>SSO lockouts, urgent tickets, follow-ups delivered</td></tr>
     <tr><td><b>Atlas Retail</b></td><td>us-east</td><td>2027-01-10</td><td>Heavy Reports v1 user, migration workshop not scheduled</td></tr>
     <tr><td><b>Brightline Health</b></td><td>us-east</td><td>2027-01-31</td><td>QBR promises: SSO runbook and permission doc late</td></tr>
-    <tr><td><b>Lumio Learning</b></td><td>us-east</td><td>2027-03-01</td><td>Healthy and growing, expansion quote pending (control)</td></tr>
+    <tr><td><b>Lumio Learning</b></td><td>us-east</td><td>2027-03-01</td><td>Growing: projected at 235% of its AI Starter allowance ($538 overage) and asking for a bigger AI plan; the 200-seat quote is overdue</td></tr>
     <tr><td><b>Fern Media</b></td><td>us-east</td><td>2027-02-15</td><td>Healthy, all follow-ups done (control)</td></tr>
+    <tr><td><b>Nord Bank 19</b></td><td>us-east</td><td>2026-11-25</td><td>AI Pro; an integration spiked usage ~10× from Oct 12, projected 475% of allowance, a $7,502 overage before renewal (bill-shock rule)</td></tr>
+    <tr><td><b>Bright Health 23</b></td><td>us-east</td><td>2026-11-14</td><td>AI Beta (unlimited) design partner: ~$4,384 inference cost vs $1,500 price, −192% AI margin; must move to metered pricing at renewal</td></tr>
   </tbody>
 </table>
 </div>
@@ -387,6 +416,7 @@
     <tr><td><b>Snowflake data</b></td><td class="mono">ACME.PULSE · ACCOUNT_HEALTH · PULSE_ANALYTICS</td><td class="mono">ACME.PEOPLE (EMPLOYEES ~195, WORKLOAD_WEEKLY, SURVEY_RESPONSES) · TEAM_HEALTH · PEOPLE_ANALYTICS</td></tr>
     <tr><td><b>Claude in Cortex</b></td><td class="mono">06 → BRAIN.COMMITMENTS</td><td class="mono">hr/14 → BRAIN.PEOPLE_COMMITMENTS (open / done / broken)</td></tr>
     <tr><td><b>Write-back</b></td><td class="mono">BRAIN.RISK_ALERTS</td><td><span class="mono">BRAIN.PEOPLE_ACTIONS</span>; pay-affecting steps routed to Total Rewards</td></tr>
+    <tr><td><b>Cases</b></td><td>Renewals at risk · AI token consumption</td><td>Teams at risk · Time off (coverage, on-call swaps, comp days)</td></tr>
     <tr><td><b>Personas</b></td><td class="mono">ACME_CS_LEAD · ACME_CSM_EU</td><td class="mono">ACME_HRBP · ACME_MGR_DATA_INFRA</td></tr>
     <tr><td><b>Governance</b></td><td>Row access by customer region</td><td>Row access by team · <b>salary masking policy</b> · <b>aggregation policy</b> (survey groups of 5+) · HR notes for HRBPs only</td></tr>
   </tbody>
