@@ -115,10 +115,11 @@
 <header>
   <div class="eyebrow">Intelligence at Work Hackathon · Snowflake × Anthropic</div>
   <h1>Ingestion · People Guard<span class="badge">HR</span></h1>
-  <p class="lede">The HR version of the app, with two cases. <b>Teams at risk</b>: <i>“Which teams are at risk of losing people, and what did we promise them?”</i> <b>Time off</b>: <i>“Which pending requests can we approve without breaking on-call coverage, and which comp days do we owe?”</i> The agent connects promises made in 1:1s and retros with workload, time off, engagement and performance data in Snowflake. Claude investigates and verifies, and plans and decisions are written back only after a human approves. Pay-affecting steps are routed to Total Rewards.</p>
+  <p class="lede">The HR version of the app, with three cases. <b>Teams at risk</b>: <i>“Which teams are at risk of losing people, and what did we promise them?”</i> <b>Time off</b>: <i>“Which pending requests can we approve without breaking on-call coverage, and which comp days do we owe?”</i> <b>Performance reviews</b>: <i>“Where should the next calibration look closer?”</i> The agent connects promises made in 1:1s and retros with workload, time off, engagement and performance data in Snowflake. Claude investigates and verifies, and plans and decisions are written back only after a human approves. Pay-affecting steps are routed to Total Rewards.</p>
   <div class="pills">
     <span class="pill">User: HR Business Partner</span>
     <span class="pill">Team-level by default</span>
+    <span class="pill">Cases: teams at risk · time off · performance</span>
     <span class="pill">Salaries masked · survey groups ≥ 5</span>
     <span class="pill">All employees fictional</span>
   </div>
@@ -210,7 +211,7 @@
   <text x="557" y="189" class="s-mono" font-size="10">GOALS · FEEDBACK · TIME_OFF_REQUESTS</text>
   <text x="557" y="204" class="s-mono" font-size="10">ONCALL_SCHEDULE · COMP_DAYS_OWED</text>
   <text x="557" y="224" class="s-text" font-size="11" font-weight="600">TEAM_HEALTH · TIME_OFF_REVIEW</text>
-  <text x="557" y="244" class="s-text" font-size="11" font-weight="600">Semantic view PEOPLE_ANALYTICS</text>
+  <text x="557" y="244" class="s-text" font-size="9.5" font-weight="600">PERFORMANCE_SUMMARY · PEOPLE_ANALYTICS</text>
 
   <rect x="545" y="268" width="250" height="105" rx="8" class="s-sf-box"/>
   <text x="557" y="288" class="s-text" font-size="12.5" font-weight="600">ACME.KNOWLEDGE</text>
@@ -307,7 +308,7 @@
   <rect x="796" y="618" width="160" height="72" rx="8" class="s-app"/>
   <text x="808" y="639" class="s-text" font-size="11.5" font-weight="600">run-sql.ts</text>
   <text x="808" y="656" class="s-muted" font-size="10.5">npm run setup:</text>
-  <text x="808" y="671" class="s-muted" font-size="10.5">hr/10 → hr/16</text>
+  <text x="808" y="671" class="s-muted" font-size="10.5">hr/10 → hr/17</text>
 
   <line x1="196" y1="654" x2="224" y2="654" class="s-line-red" marker-end="url(#m-red)"/>
   <line x1="386" y1="654" x2="414" y2="654" class="s-line" marker-end="url(#m-muted)"/>
@@ -370,12 +371,41 @@
     </ul></div>
 </div>
 
+<h2>Performance-review case</h2>
+<p class="sub">Example (as the HR Business Partner): <i>“Prepare the next calibration: how do rating distributions, self vs manager gaps and review completion compare across teams, and where should HR look closer?”</i></p>
+<div class="grid3">
+  <div class="card"><div class="bar" style="background:var(--sf)"></div><div class="k" style="color:var(--sf)">Data</div>
+    <ul>
+      <li><code>PERFORMANCE_SUMMARY</code>: per team and cycle (2025-H1, 2025-H2, 2026-H1)</li>
+      <li><code>PERFORMANCE_COMPETENCIES</code>: per team and competency, last two cycles</li>
+      <li>Context from <code>TEAM_HEALTH</code>, goals and promises (for example a missed promotion case)</li>
+      <li>Synthetic reviews whose shape follows aggregate-only statistics of a real HR system</li>
+    </ul></div>
+  <div class="card"><div class="bar" style="background:var(--ai)"></div><div class="k" style="color:var(--ai)">What the agent does</div>
+    <ul>
+      <li>Compares each team with the company mix and with its own past cycles</li>
+      <li>Flags likely leniency or severity, low completion and dropping competencies</li>
+      <li>Spots strong-performing teams under strain</li>
+      <li>Recommends process steps only: calibration focus, manager guidance, chasing reviews</li>
+    </ul></div>
+  <div class="card"><div class="bar" style="background:var(--warn)"></div><div class="k" style="color:var(--warn)">Test run result</div>
+    <ul>
+      <li>Company: average 3.92, 21% rated 5, 94% completion</li>
+      <li>Low completion: Finance 75%, Product Eng 83%</li>
+      <li>Possibly lenient: Design (50% rated 5, never a 3), Platform (3.62 → 4.15)</li>
+      <li>Possibly severe or drifting: Product Management (4.57 → 3.50), Support (down three cycles)</li>
+      <li>Data Infra: strong ratings, team under strain, promotion case broken</li>
+      <li>9/9 figures verified; no individual ratings shown</li>
+    </ul></div>
+</div>
+
 <h2>Who sees what</h2>
 <p class="sub">Enforced by Snowflake policies on the persona's role, not by the app. Try the same question as both personas.</p>
 <div class="card tablecard">
 <table>
   <thead><tr><th>Data</th><th>HR Business Partner<br><span class="mono">ACME_HRBP</span></th><th>Data Infra Manager<br><span class="mono">ACME_MGR_DATA_INFRA</span></th><th>Enforced by</th></tr></thead>
   <tbody>
+    <tr><td>Performance aggregates (rating mix, gaps, completion)</td><td class="yes">All teams, groups ≥ 5</td><td class="part">Data Infra only</td><td class="mono">TEAM_POLICY + 5+ rule in the views</td></tr>
     <tr><td>Employees, workload, reviews, goals, feedback</td><td class="yes">All 14 teams</td><td class="part">Data Infra only</td><td class="mono">TEAM_POLICY (row access)</td></tr>
     <tr><td>Salaries</td><td class="yes">Visible</td><td class="no">Masked (NULL)</td><td class="mono">SALARY_MASK (masking policy)</td></tr>
     <tr><td>Leave type (sick, parental)</td><td class="yes">Visible</td><td class="part">Shown as “leave”</td><td class="mono">LEAVE_TYPE_MASK (masking policy)</td></tr>
@@ -448,6 +478,7 @@
     <tr><td class="mono">PEOPLE.WORKLOAD_WEEKLY</td><td>Per person per week, Apr–Oct 2026: after-hours hours, pages, PTO days</td></tr>
     <tr><td class="mono">PEOPLE.SURVEY_RESPONSES</td><td>Anonymous pulse answers (Jun, Sep, Oct): eNPS, workload, manager support, growth, intent to stay. Team only, aggregate-only.</td></tr>
     <tr><td class="mono">PEOPLE.REVIEWS · REVIEW_RATINGS</td><td>984 self and manager reviews over 3 cycles, with ratings for 7 generic competencies</td></tr>
+    <tr><td class="mono">PEOPLE.PERFORMANCE_SUMMARY · PERFORMANCE_COMPETENCIES</td><td>Per team and cycle: completion, manager rating mix, average self and manager rating, self-vs-manager gap. Per team and competency: 2025-H2 vs 2026-H1. Groups of 5+ only.</td></tr>
     <tr><td class="mono">PEOPLE.GOALS · FEEDBACK</td><td>177 annual goals for 2026 (progress, at risk) and about 430 peer-recognition events (metadata only)</td></tr>
     <tr><td class="mono">PEOPLE.TEAM_HEALTH</td><td>One row per team: all risk signals plus overdue and broken promises, with groups under 5 suppressed</td></tr>
     <tr><td class="mono">KNOWLEDGE.DOC_CHUNKS</td><td>HR notes (<code>access = hr</code>) and policies, indexed by Cortex Search</td></tr>
@@ -467,6 +498,7 @@
     <ul>
       <li>Score individuals as “flight risks” or profile people</li>
       <li>Suggest performance or disciplinary action from these signals</li>
+      <li>Rank or rate individuals, or use workload and survey data as performance evidence</li>
       <li>Report survey or rating aggregates for groups under 5</li>
       <li>Execute pay changes (they go to Total Rewards)</li>
     </ul></div>
