@@ -650,8 +650,8 @@ async function ask() {
     if (e.type === "approval_result") {
       const card = $("ap-" + e.approvalId);
       if (card) card.querySelector(".actions").innerHTML = e.approved
-        ? `<span class="badge ok" style="font-size:12.5px;padding:5px 12px">✓ Approved · ${e.written} written to ${card.querySelector(".grid") ? "ACME.BRAIN.TIME_OFF_DECISIONS" : askEdition === "hr" ? "ACME.BRAIN.PEOPLE_ACTIONS" : "ACME.BRAIN.RISK_ALERTS"}</span>`
-        : `<span class="badge neutral" style="font-size:12.5px;padding:5px 12px">Declined · nothing written</span>`;
+        ? `<span class="badge ok" style="font-size:12.5px;padding:5px 12px;text-transform:none">✓ Approved · ${e.written} written to ${card.querySelector(".grid") ? "ACME.BRAIN.TIME_OFF_DECISIONS" : askEdition === "hr" ? "ACME.BRAIN.PEOPLE_ACTIONS" : "ACME.BRAIN.RISK_ALERTS"}</span>`
+        : `<span class="badge neutral" style="font-size:12.5px;padding:5px 12px;text-transform:none">Declined · nothing written</span>`;
       if (e.approved) { delete cache[`${askEdition}|${askRole}|actions`]; updateActionsCount(); }
     }
     if (e.type === "answer") answerText = e.text;
