@@ -4,6 +4,8 @@
 
 The signals that predict regretted attrition are spread across systems: pager logs, after-hours work, time not taken, pulse surveys, reviews and goals. The promises managers make in 1:1s and retros sit in notes nobody tracks.
 
+**Demo video (1 min):** [docs/people-guard-demo.mp4](docs/people-guard-demo.mp4)
+
 **People Guard** is an agent for HR Business Partners and people managers, connected to **Snowflake** and powered by **Claude**. It covers three cases:
 - **Teams at risk:** which teams are at risk of losing people, and what did we promise them?
 - **Time off:** which pending requests can we approve without breaking on-call coverage, and which comp days do we owe?
