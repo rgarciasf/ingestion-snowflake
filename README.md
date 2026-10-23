@@ -1,15 +1,15 @@
-# Ingestion · Revenue Guard + People Guard (on Snowflake)
+# Ingestion · People Guard (HR) on Snowflake
 
-**Find what is about to break, revenue or people, and what we promised, before anyone notices.**
+**Find which teams are about to burn out or break, and what we promised them, before anyone resigns.**
 
-The warning signs live in different systems. The promise made on a call lives in a transcript, the usage drop in the warehouse, the angry tickets in the support desk, and the burnout in pager logs and time-off requests. Today someone reviews these by hand, weekly at best, and promises slip.
+The signals that predict regretted attrition are spread across systems: pager logs, after-hours work, time not taken, pulse surveys, reviews and goals. The promises managers make in 1:1s and retros sit in notes nobody tracks.
 
-This app is one agent with two versions, connected to **Snowflake** and powered by **Claude**:
+**People Guard** is an agent for HR Business Partners and people managers, connected to **Snowflake** and powered by **Claude**. It covers three cases:
+- **Teams at risk:** which teams are at risk of losing people, and what did we promise them?
+- **Time off:** which pending requests can we approve without breaking on-call coverage, and which comp days do we owe?
+- **Performance reviews:** where should the next calibration look closer: rating mix, self vs manager gaps, completion?
 
-| | **Revenue** (Revenue Guard) | **HR** (People Guard) |
-|---|---|---|
-| User | VP Customer Success | HR Business Partner, people manager |
-| Cases | **Renewals at risk**: which renewals are at risk, and what did we promise them?<br>**AI token consumption**: who will exceed their AI allowance, who pays for AI they don't use, and where are we losing margin? | **Teams at risk**: which teams are at risk of losing people, and what did we promise them?<br>**Time off**: which pending requests can we approve without breaking on-call coverage, and which comp days do we owe?<br>**Performance reviews**: where should calibration look closer: rating mix, self vs manager gaps, completion? |
+> **Revenue version: on hold.** The repo also contains a Revenue version (renewals at risk and AI token consumption for a VP of Customer Success). Its code, data and Snowflake objects are kept, but the app offers only the HR version by default. Set `ENABLED_EDITIONS=hr,revenue` to bring it back. The sections below still describe both.
 
 For every case the agent does the same five things:
 
@@ -135,7 +135,7 @@ npm run knowledge             # regenerates snowflake/03_knowledge.sql from data
 npm run hr:data               # regenerates snowflake/hr/10, 11 and 15 (needs data/hr-profile.json)
 npm run graph                 # regenerates snowflake/07_knowledge_graph.sql from data/graph*.json
 npm run setup                 # runs snowflake/01..08 (Revenue) then snowflake/hr/10..17 (HR) as ACCOUNTADMIN
-npm start                     # http://localhost:3000 (set PORT to change)
+npm start                     # http://localhost:3000 (set PORT to change; ENABLED_EDITIONS=hr by default)
 ```
 
 `06_commitments_claude.sql` and `hr/14_hr_commitments_claude.sql` use a Claude model through Cortex `AI_COMPLETE`. Set `CLAUDE_MODEL` at the top of each file to a Claude model available in your Snowflake region (tested with `claude-sonnet-4-5`). The governance scripts are re-runnable.

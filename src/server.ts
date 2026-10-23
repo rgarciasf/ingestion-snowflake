@@ -4,7 +4,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { readFile } from "node:fs/promises";
 import { ask, resolveApproval } from "./agent.ts";
 import { query } from "./snowflake.ts";
-import { EDITIONS, isEdition, personaOf } from "./editions.ts";
+import { EDITIONS, ENABLED, isEdition, personaOf } from "./editions.ts";
 
 const PORT = Number(process.env.PORT || 3000);
 const WEB = new URL("../web/", import.meta.url);
@@ -24,7 +24,7 @@ function json(res: ServerResponse, status: number, value: unknown) {
 
 // Public version config for the UI (no SQL or prompts).
 const publicEditions = Object.fromEntries(
-  Object.values(EDITIONS).map((e) => [e.id, {
+  Object.values(EDITIONS).filter((e) => ENABLED.includes(e.id)).map((e) => [e.id, {
     id: e.id, label: e.label, product: e.product, headline: e.headline, subtitle: e.subtitle, examples: e.examples,
     personas: Object.fromEntries(Object.entries(e.personas).map(([k, p]) => [k, { label: p.label, description: p.description }])),
     tableTab: { label: e.tableTab.label, title: e.tableTab.title, subtitle: e.tableTab.subtitle },

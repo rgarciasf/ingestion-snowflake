@@ -134,5 +134,10 @@ Final answer: start with the conclusion in one or two sentences, then a short ta
 };
 
 export type EditionId = keyof typeof EDITIONS;
-export const isEdition = (e: unknown): e is EditionId => e === "revenue" || e === "hr";
+
+// Which versions the app offers. The Revenue version is on hold: its code, data and Snowflake objects are kept,
+// and ENABLED_EDITIONS=hr,revenue brings it back.
+export const ENABLED: EditionId[] = (process.env.ENABLED_EDITIONS || "hr")
+  .split(",").map((e) => e.trim()).filter((e): e is EditionId => e === "revenue" || e === "hr");
+export const isEdition = (e: unknown): e is EditionId => (e === "revenue" || e === "hr") && ENABLED.includes(e);
 export const personaOf = (edition: EditionId, role: string): Persona | undefined => EDITIONS[edition].personas[role];
