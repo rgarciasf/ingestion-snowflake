@@ -9,14 +9,18 @@
     "knowledge": "node scripts/build-knowledge-sql.mjs",
     "hr:data": "node scripts/build-hr-sql.mjs",
     "graph": "node scripts/build-graph-sql.mjs",
-    "setup": "node --env-file-if-exists=.env scripts/run-sql.ts"
+    "setup": "node --env-file-if-exists=.env scripts/run-sql.ts",
+    "mcp:ascend": "node mcp/ascend-server.ts"
   },
   "engines": {
     "node": ">=24"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.2.0",
+    "@electric-sql/pglite": "^0.5.11",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "pg": "^8.23.1",
-    "snowflake-sdk": "^3.4.0"
+    "snowflake-sdk": "^3.4.0",
+    "zod": "^4.6.7"
   }
 }

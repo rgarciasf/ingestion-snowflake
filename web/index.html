@@ -589,6 +589,7 @@ function stepInput(tool, input) {
   if (tool === "search_knowledge") return `<pre>${esc(input.query)}${input.account ? " · account=" + esc(input.account) : ""}${input.team ? " · team=" + esc(input.team) : ""}${input.source_type ? " · " + esc(input.source_type) : ""}</pre>`;
   if (tool === "verify_numbers") return `<pre>${esc((input.claims || []).map((c) => "• " + c.claim + " → " + c.value).join("\n"))}</pre>`;
   if (tool === "explore_graph") return `<pre>${esc(input.entity)} · ${input.hops ?? 2} hops</pre>`;
+  if (tool.startsWith("ascend_")) return `<div class="purpose">Ascend HR system · MCP</div><pre>${esc(tool.slice(7))}(${esc(JSON.stringify(input))})</pre>`;
   if (tool === "get_commitments") return `<pre>${esc(JSON.stringify(input))}</pre>`;
   if (tool === "propose_actions") return `<pre>${esc((input.items || []).map((a) => a.account || a.team).join(", "))}</pre>`;
   if (tool === "propose_time_off_decisions") return `<pre>${esc((input.decisions || []).map((d) => `${d.employee}: ${d.decision}`).join("\n"))}</pre>`;

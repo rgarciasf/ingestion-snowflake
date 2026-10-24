@@ -69,6 +69,24 @@ For every case the agent does the same five things:
 - **Test run (as the Data Infra Manager):** 9 pending requests. It solved 4 on-call clashes with 2 named swaps, approved Lena Okafor's promised week off as a one-day notice exception, flagged someone under the 15-day minimum, and scheduled all 23 owed comp days before their deadline. Decisions are written to `ACME.BRAIN.TIME_OFF_DECISIONS`.
 - **Privacy:** sick and parental leave show as "leave" to anyone who isn't an HRBP (masking policy).
 
+## Ascend over MCP (HR performance system)
+
+SignalHR also connects to **Ascend**, our HR performance system (reviews, goals, peer feedback), through an **MCP server**: [`mcp/ascend-server.ts`](mcp/ascend-server.ts). The agent's MCP client ([`src/ascend-mcp.ts`](src/ascend-mcp.ts)) lists its tools and offers them to Claude as `ascend_*`, next to the Snowflake tools.
+
+- **Tools (fixed queries, no free SQL):** `review_cycles`, `team_review_summary`, `goal_progress`, `feedback_activity`, `competency_scores`.
+- **Privacy by construction:** every result is grouped by team, groups under 5 are dropped, and no names, ids or free text are returned.
+- **Same governance as Snowflake:** the app starts one MCP connection per persona and sets `ASCEND_SCOPE_TEAM` from the role (the manager gets Data Infra only). The model can't widen it.
+- **Citations and audit:** Ascend results get `[qN]` ids like SQL results (the drawer shows the Postgres query the server ran) and are logged in `AGENT_TRACES`.
+- **Synthetic stand-in (default, `ASCEND_MODE=standin`):** an in-process Postgres (PGlite) with Ascend's table layout, loaded with the same fictional Acme people as Snowflake. `ASCEND_MODE=live` points it at the real Ascend database (read-only); it is not used for this demo.
+
+Use it from Claude Desktop too (`claude_desktop_config.json`):
+
+```json
+{ "mcpServers": { "ascend": { "command": "node", "args": ["/path/to/ingestion-snowflake/mcp/ascend-server.ts"] } } }
+```
+
+Try: *"From Ascend (over MCP): which teams have the most goals at risk and the least peer feedback, and how does that line up with their workload and the promises we made them?"*
+
 ## Personas and governance
 
 | Persona (Snowflake role) | Sees | Enforced by |

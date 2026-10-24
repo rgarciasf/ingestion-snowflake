@@ -100,6 +100,7 @@ Final answer: start with the conclusion in one or two sentences, then a short ta
       "What's going on in Data Infra since DI-4410, and what did we promise Lena Okafor?",
       "Compare after-hours work and PTO for teams hit by incidents (Data Infra, Product Eng, Payments) vs the rest.",
       "Which promises to employees are overdue or broken, grouped by owner?",
+      "From Ascend (over MCP): which teams have the most goals at risk and the least peer feedback, and how does that line up with their workload and the promises we made them?",
       "Prepare the next calibration: how do rating distributions, self vs manager gaps and review completion compare across teams, and where should HR look closer?",
       "Review the pending time-off requests for Data Infra in November and December: approve what keeps on-call coverage, and make sure we schedule the comp days we owe.",
       "If Lena Okafor left, which services, incidents and customers would be exposed, and what did we promise her?",

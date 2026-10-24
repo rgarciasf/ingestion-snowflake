@@ -5,6 +5,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "node:crypto";
 import { query, assertReadOnly, sqlLiteral, type Rows } from "./snowflake.ts";
 import { EDITIONS, AS_OF, type EditionId } from "./editions.ts";
+import { ascendTools, callAscend, isAscendTool } from "./ascend-mcp.ts";
 
 const MAIN_MODEL = process.env.MAIN_MODEL || "claude-opus-5-5";
 const VERIFIER_MODEL = process.env.VERIFIER_MODEL || "claude-sonnet-5-5";
@@ -61,7 +62,7 @@ How you work:
 1. Investigate with tools. Every number you state must come from a run_sql result; cite it as [q1], [q2]... Every claim from a document or note must cite its chunk id in brackets, e.g. [people-2026-10-05-data-infra-retro--1].
 2. Before proposing any actions, call verify_numbers with the key figures you will rely on. Do not propose items whose numbers failed verification; fix them first.
 3. propose_actions pauses for human approval and writes to Snowflake only if approved.
-4. You only see what the ${role} role can see in Snowflake (row access, masking and aggregation policies). If data seems missing or masked, say so plainly; never guess.
+${edition === "hr" ? "   Tools named ascend_* come from Ascend, the HR performance system, over MCP (aggregate-only, team level, groups under 5 suppressed). Their results also get [qN] ids; cite them the same way and say the figure is from Ascend.\n" : ""}4. You only see what the ${role} role can see in Snowflake (row access, masking and aggregation policies). If data seems missing or masked, say so plainly; never guess.
 Be concise. Use Markdown.`;
 }
 
@@ -484,8 +485,23 @@ async function executeTool(run: Run, name: string, input: any): Promise<{ text: 
     case "verify_numbers": return verifyNumbers(run, input.claims ?? []);
     case "propose_actions": return proposeActions(run, input.items ?? []);
     case "propose_time_off_decisions": return proposeTimeOff(run, input.decisions ?? []);
-    default: throw new Error(`Unknown tool ${name}`);
+    default:
+      if (isAscendTool(name)) return ascendCall(run, name, input);
+      throw new Error(`Unknown tool ${name}`);
   }
+}
+
+// Ascend over MCP: results are cited like SQL results, with the Postgres query the server ran.
+async function ascendCall(run: Run, name: string, input: any) {
+  const t0 = Date.now();
+  const r = await callAscend(run.role, name, input);
+  const id = `q${++run.qCount}`;
+  run.refs[id] = { kind: "sql", id, sql: `-- ${r.source}, ${r.scope} (MCP tool ${name})\n${r.sql}`, purpose: `Ascend MCP · ${name.replace("ascend_", "")}`, rows: r.rows, rowCount: r.rows.length, ms: Date.now() - t0 };
+  return {
+    text: `[${id}] ${r.source}, ${r.scope}, ${r.rows.length} rows:\n${JSON.stringify(r.rows.slice(0, PREVIEW_ROWS))}`,
+    summary: `${r.rows.length} rows from Ascend (MCP)`,
+    ref: id,
+  };
 }
 
 async function runTools(run: Run, content: Anthropic.ContentBlock[], agent: "main" | "verifier"): Promise<Anthropic.ToolResultBlockParam[]> {
@@ -514,7 +530,7 @@ export async function ask(question: string, edition: EditionId, role: string, em
   const t0 = Date.now();
   const run: Run = { edition, role, refs: {}, qCount: 0, emit, usage: { input: 0, output: 0 }, steps: [] };
   const messages: Anthropic.MessageParam[] = [{ role: "user", content: question }];
-  const tools = toolsFor(edition);
+  const tools = edition === "hr" ? [...toolsFor(edition), ...(await ascendTools(role))] : toolsFor(edition);
   let answer = "";
   try {
     for (let turn = 0; turn < 30; turn++) {

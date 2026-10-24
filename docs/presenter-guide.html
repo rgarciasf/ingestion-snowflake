@@ -98,6 +98,7 @@
   <a href="#s6">6. Demo runbook and fallbacks</a>
   <a href="#s7">7. Q&amp;A: likely questions and short answers</a>
   <a href="#s8">8. Numbers cheat sheet</a>
+  <a href="#s-mcp">Round 2: Ascend over MCP</a>
   <a href="#s9">9. Be honest about</a>
 </nav>
 
@@ -369,6 +370,20 @@
   <tr><td>Models</td><td>Claude Opus 5.5 (investigator) · Claude Sonnet 5.5 (verifier) · Claude Sonnet 4.5 in Cortex (extraction)</td></tr>
   <tr><td>Repo / video</td><td>github.com/rgarciasf/ingestion-snowflake · docs/people-guard-demo.mp4</td></tr>
 </table>
+
+<!-- ======================================================= MCP -->
+<h2 id="s-mcp">Round 2 addition: Ascend over MCP</h2>
+<p class="sub">Built after round 1, following the judges' suggestion to connect HR systems like Workday and Lattice through MCP.</p>
+<div class="card">
+  <ul>
+    <li><b>What it is:</b> an MCP server for <b>Ascend</b>, our HR performance system (reviews, goals, peer feedback). The SignalHR agent connects to it as an MCP client, so Claude gets 5 extra tools (<code>ascend_*</code>) next to the Snowflake ones.</li>
+    <li><b>Governed like Snowflake:</b> fixed aggregate-only queries, team level, groups under 5 dropped, no names or text. The app opens one MCP connection per persona and sets the team scope from the role, so the manager only gets Data Infra.</li>
+    <li><b>Cited and audited:</b> Ascend results get the same <b>q</b> chips (the drawer shows the query the server ran) and are logged in <code>AGENT_TRACES</code>.</li>
+    <li><b>Synthetic stand-in:</b> an in-process Postgres with Ascend's table layout and the same fictional Acme people. Switching to the real system is a connection string (<code>ASCEND_MODE=live</code>, read-only). The same pattern works for Workday or Lattice.</li>
+  </ul>
+</div>
+<div class="do"><span class="tag do">Demo (≈ 20 s)</span>As <b>Data Infra Manager</b>, ask: “From Ascend (over MCP): how is my team doing on goals and peer feedback compared with the rest of the company? Keep it short, no actions.” The trace shows <code>ascend_goal_progress</code> and <code>ascend_feedback_activity</code>; the answer says it can only see Data Infra.</div>
+<div class="say"><b>Say:</b> “You suggested MCP for systems like Workday and Lattice, so we built it. SignalHR now talks to Ascend, our HR performance system, through an MCP server. It's governed the same way as Snowflake: the manager's scope is set by the app, not the model, so it only sees its own team. Half of Data Infra's goals are at risk and only 3% of its feedback is praise. That's another signal, from another system, in the same cited answer.”</div>
 
 <!-- ======================================================= 9 -->
 <h2 id="s9">9. Be honest about</h2>
